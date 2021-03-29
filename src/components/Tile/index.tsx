@@ -1,7 +1,7 @@
 import * as S from './styles'
 
 interface PieceProps {
-    id: number
+    id: string
     name: string
     team: string
 }
@@ -14,7 +14,7 @@ const Tile: React.FC<TileProps> = ({pieces}) => {
     return(
         <S.Container>
             {pieces.map(piece => (
-                <S.Piece team={piece.team}>
+                <S.Piece key={piece.id} team={piece.team}>
                     <div>
                         <p>{piece.name}</p>
                     </div>

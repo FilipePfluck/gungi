@@ -3,24 +3,25 @@ import * as S from './styles'
 import Tile from '../Tile'
 
 interface PieceProps {
-    id: number
+    id: string
     name: string
     team: string
 }
 
 interface TileProps {
-    pieces: PieceProps[]
+    pieces: PieceProps[],
+    id: string
 }
 
 interface RowProps {
-    tiles: TileProps[]
+    tiles: TileProps[],
 }
 
 const Row: React.FC<RowProps> = ({tiles}) => {
     return(
         <S.Container>
             {tiles.map(tile => (
-                <Tile pieces={tile.pieces}/>
+                <Tile key={tile.id} pieces={tile.pieces}/>
             ))}
         </S.Container>
     )

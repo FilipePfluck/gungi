@@ -1,30 +1,21 @@
+import { useEffect } from 'react'
 import Row from '../../components/Row'
+import { UseBoard } from '../../context/boardContext'
+
+import ListOfPieces from '../../components/ListOfPieces'
 
 import * as S from './styles'
 
 const Board = () => {
-    const row1 = [
-        {pieces: [{id: 1, name: 'king', team: 'black'}, {id: 1, name: 'pawn', team: 'black'}, {id: 1, name: 'king', team: 'black'}]}, 
-        {pieces: [{id: 1, name: 'king', team: 'white'}]},
-        {pieces: []}, {pieces: []},{pieces: []}, 
-        {pieces: []}, 
-        {pieces: []},
-        {pieces: []}, 
-        {pieces: []}
-    ]
+    const { board } = UseBoard()
 
     return(
         <S.Container>
+            <ListOfPieces/>
             <S.Board>
-                <Row tiles={row1}/>
-                <Row tiles={row1}/>
-                <Row tiles={row1}/>
-                <Row tiles={row1}/>
-                <Row tiles={row1}/>
-                <Row tiles={row1}/>
-                <Row tiles={row1}/>
-                <Row tiles={row1}/>
-                <Row tiles={row1}/>
+                {board.map(row => (
+                    <Row key={row.id} tiles={row.tiles}/>
+                ))}
             </S.Board>
         </S.Container>
     )
