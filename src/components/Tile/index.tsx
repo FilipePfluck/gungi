@@ -1,3 +1,5 @@
+import { useCallback } from 'react'
+import { UseBoard } from '../../context/boardContext'
 import * as S from './styles'
 
 interface PieceProps {
@@ -7,16 +9,28 @@ interface PieceProps {
 }
 
 interface TileProps {
-    pieces: PieceProps[]
+    pieces: PieceProps[],
+    tileId: string,
+    rowId: string
 }
 
-const Tile: React.FC<TileProps> = ({pieces}) => {
+const Tile: React.FC<TileProps> = ({pieces, rowId, tileId}) => {
+    const { play, selectedPiece } = UseBoard()
+
+    const handleClickTile = useCallback(()=>{
+        if(selectedPiece){
+            play({rowId, tileId})
+        }
+    },[selectedPiece])
+
     return(
-        <S.Container>
+        <S.Container
+            onClick={handleClickTile}
+        >
             {pieces.map(piece => (
                 <S.Piece key={piece.id} team={piece.team}>
                     <div>
-                        <p>{piece.name}</p>
+                        <img src={`/${piece.name}.svg`} alt={piece.name}/>
                     </div>
                 </S.Piece>
             ))}

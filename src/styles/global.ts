@@ -8,7 +8,7 @@ export default createGlobalStyle `
         outline: 0;
     }
     body {
-        background: #242829;
+        background: #343839;
         color: #FFF;
         -webkit-font-smoothing: antialiased;
         font-family: "Roboto Slab", serif;

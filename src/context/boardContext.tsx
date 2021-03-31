@@ -20,7 +20,9 @@ interface ContextValue {
     board: RowProps[]
     pieces: PieceProps[],
     selectedPiece: PieceProps | null
-    setSelectedPiece: Dispatch<SetStateAction<PieceProps>>
+    setSelectedPiece: Dispatch<SetStateAction<PieceProps>>,
+    play: ({tileId, rowId})=>void
+    playingNow: 'white' | 'black'
 }
 
 const BoardContext = createContext({} as ContextValue)
@@ -266,7 +268,7 @@ export const BoardProvider: React.FC = ({children}) => {
             for(let j=0; j<9; j++){
                 let tile = {
                     pieces: [],
-                    id: 'tile' + (j * (i+1))
+                    id: 'tile' + (i+1) + '-' + (j+1)
                 }
 
                 row.tiles.push(tile)
@@ -280,15 +282,125 @@ export const BoardProvider: React.FC = ({children}) => {
 
     const [selectedPiece, setSelectedPiece] = useState<PieceProps>(null)
 
-/*     const addPieceToTile = useCallback((id)=>{
-        const newArray = board.map(b => {})
-    },[]) */
+    const [playingNow, setPlayingNow] = useState<'white' | 'black'>('white')
+
+    const play = useCallback(
+        ({tileId, rowId}: {tileId: string, rowId: string}
+    )=>{
+
+        setPlayingNow(playingNowState => {
+            setSelectedPiece(selectedPieceState => {
+                let shouldRemoveFromTheBench = true
+                
+                setBoard(boardState=>{
+                    const newArray = boardState.map(row => {
+                        if(row.id === rowId){
+        
+                            const newTiles = row.tiles.map(tile => {
+                                if(tile.id === tileId){
+                                    const towerHeight = tile.pieces.length
+                                    const lastPiece = tile.pieces[towerHeight - 1]
+
+                                    //add piece to the tower
+                                    if(towerHeight > 0){
+                                        const topPieceIsFromSameTeam = lastPiece.team === playingNowState
+
+                                        console.log(towerHeight, topPieceIsFromSameTeam)
+
+                                        //tier up
+                                        if(topPieceIsFromSameTeam){
+                                            if(towerHeight === 3){
+                                                shouldRemoveFromTheBench = false
+        
+                                                return {
+                                                    id: tileId,
+                                                    pieces: [...tile.pieces]
+                                                }
+                                            }
+
+                                            return {
+                                                id: tileId,
+                                                pieces: [...tile.pieces, selectedPieceState]
+                                            }
+                                        }
+                                        
+                                        //capture enemy piece
+                                        else{
+                                            const piecesTowerWithoutLastPiece = tile.pieces.filter(piece =>{
+                                                return piece.id !== lastPiece.id
+                                            })
+
+                                            console.log(piecesTowerWithoutLastPiece)
+
+                                            return{
+                                                id: tileId,
+                                                pieces: [...piecesTowerWithoutLastPiece, selectedPieceState]
+                                            }
+                                        }
+
+                                    }
+                                    //add piece to empty tile
+                                    else{
+                                        return {
+                                            id: tileId,
+                                            pieces: [...tile.pieces, selectedPieceState]
+                                        }
+                                    }
+                                }
+
+                                if(shouldRemoveFromTheBench){
+                                    removePieceFromBench(selectedPieceState)
+                                }
+        
+                                return tile
+                            })
+            
+                            return {
+                                id: rowId,
+                                tiles: newTiles
+                            }
+                        }
+            
+                        return row
+                    })
+        
+                    return newArray
+                })
+    
+                return null
+            })
+
+            return playingNowState === 'white' 
+                ? 'black'
+                : 'white'
+        })
+    },[])
+
+    const captureEnemyPiece = useCallback(()=>{
+
+    },[])
+
+    const tierUp = useCallback(()=>{
+
+    },[])
+
+    const removePieceFromBench = useCallback((selectedPieceState: PieceProps)=>{
+        setPieces(piecesState => {
+            const newArray = piecesState.filter(piece => {
+                return piece.id !== selectedPieceState.id
+            })
+
+            return newArray
+        })
+    },[])
 
     const value={
         board,
         pieces,
         selectedPiece,
-        setSelectedPiece
+        setSelectedPiece,
+        play,
+        playingNow
     }
 
     return(

@@ -15,13 +15,19 @@ interface TileProps {
 
 interface RowProps {
     tiles: TileProps[],
+    rowId: string
 }
 
-const Row: React.FC<RowProps> = ({tiles}) => {
+const Row: React.FC<RowProps> = ({tiles, rowId}) => {
     return(
         <S.Container>
             {tiles.map(tile => (
-                <Tile key={tile.id} pieces={tile.pieces}/>
+                <Tile 
+                    rowId={rowId} 
+                    tileId={tile.id} 
+                    key={tile.id} 
+                    pieces={tile.pieces}
+                />
             ))}
         </S.Container>
     )

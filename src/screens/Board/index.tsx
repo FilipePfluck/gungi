@@ -14,7 +14,7 @@ const Board = () => {
             <ListOfPieces/>
             <S.Board>
                 {board.map(row => (
-                    <Row key={row.id} tiles={row.tiles}/>
+                    <Row rowId={row.id} key={row.id} tiles={row.tiles}/>
                 ))}
             </S.Board>
         </S.Container>

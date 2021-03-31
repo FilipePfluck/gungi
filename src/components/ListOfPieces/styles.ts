@@ -15,8 +15,8 @@ export const Container = styled.div`
 
 export const Piece = styled.div<PieceProps>`
 
-    height: 60px;
-    width: 60px;
+    height: 50px;
+    width: 50px;
 
     border-radius: 50%;
 
@@ -38,6 +38,11 @@ export const Piece = styled.div<PieceProps>`
         display: flex;
         align-items: center;
         justify-content: center;
+
+        img{
+            height: 70%;
+            width: 70%;
+        }
     }
 
     p{
