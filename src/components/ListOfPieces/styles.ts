@@ -20,7 +20,7 @@ export const Piece = styled.div<PieceProps>`
 
     border-radius: 50%;
 
-    background-color: ${props => props.team === 'white' ? '#EEE': "#252525"};
+    background-color: ${props => props.team === 'white' ? '#EEE': "#151515"};
     border: 1px solid #252525;
 
     display: flex;

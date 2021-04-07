@@ -7,7 +7,7 @@ import ListOfPieces from '../../components/ListOfPieces'
 import * as S from './styles'
 
 const Board = () => {
-    const { board } = UseBoard()
+    const { board, finishPlacingPieces } = UseBoard()
 
     return(
         <S.Container>
@@ -17,6 +17,9 @@ const Board = () => {
                     <Row rowId={row.id} key={row.id} tiles={row.tiles}/>
                 ))}
             </S.Board>
+            <S.Button onClick={finishPlacingPieces}>
+                Terminei de posicionar as peças
+            </S.Button>
         </S.Container>
     )
 }

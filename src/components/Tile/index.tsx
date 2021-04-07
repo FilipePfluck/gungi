@@ -15,12 +15,21 @@ interface TileProps {
 }
 
 const Tile: React.FC<TileProps> = ({pieces, rowId, tileId}) => {
-    const { play, selectedPiece } = UseBoard()
+    const { addPieceFromTheBenchToTheBoard, selectedPiece, setSelectedPiece, verifyMoves, playingNow } = UseBoard()
 
     const handleClickTile = useCallback(()=>{
         if(selectedPiece){
-            play({rowId, tileId})
+            addPieceFromTheBenchToTheBoard({
+                rowId, 
+                tileId, 
+                playingNowState: playingNow, 
+                selectedPieceState: selectedPiece 
+            })
         }
+
+        /* if(pieces[0]){
+            verifyMoves(pieces[pieces.length -1], pieces.length)
+        } */
     },[selectedPiece])
 
     return(

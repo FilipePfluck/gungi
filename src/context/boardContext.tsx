@@ -21,13 +21,152 @@ interface ContextValue {
     pieces: PieceProps[],
     selectedPiece: PieceProps | null
     setSelectedPiece: Dispatch<SetStateAction<PieceProps>>,
-    play: ({tileId, rowId})=>void
+    addPieceFromTheBenchToTheBoard: (data: addPieceFromBenchToBoardProps)=>void
     playingNow: 'white' | 'black'
+    verifyMoves: (piece: PieceProps, tier: number) => void
+    finishPlacingPieces: () => void
+}
+
+interface addPieceFromBenchToBoardProps {
+    tileId: string
+    rowId: string
+    playingNowState: 'white' | 'black'
+    selectedPieceState: PieceProps | null
 }
 
 const BoardContext = createContext({} as ContextValue)
 
 export const BoardProvider: React.FC = ({children}) => {
+    const [moves, setMoves] = useState({
+        pawn: {
+            1: {
+                moves: {
+                    up: 1
+                }
+            },
+            2: {
+                moves: {
+                    up: 1,
+                    upRight: 1,
+                    upLeft: 1
+                }
+            },
+            3: {
+                moves: {
+                    up: 1,
+                    upRight: 1,
+                    upLeft: 1,
+                    downRight: 1,
+                    downLeft: 1
+                }
+            }
+        },
+
+        majorGeneral: {
+            1: {
+                moves: {
+                    up: 1,
+                    upRight: 1,
+                    upLeft: 1
+                }
+            },
+            2: {
+                moves: {
+                    up: 1,
+                    upRight: 1,
+                    upLeft: 1,
+                    downRight: 1,
+                    downLeft: 1
+                }
+            },
+            3: {
+                moves: {
+                    up: 1,
+                    upRight: 1,
+                    upLeft: 1,
+                    left: 1,
+                    right: 1,
+                    down: 1
+                }
+            }
+        },
+
+        lieutenantGeneral: {
+            1: {
+                moves: {
+                    up: 1,
+                    upRight: 1,
+                    upLeft: 1,
+                    downRight: 1,
+                    downLeft: 1
+                }
+            },
+            2: {
+                moves: {
+                    up: 1,
+                    upRight: 1,
+                    upLeft: 1,
+                    left: 1,
+                    right: 1,
+                    down: 1
+                }
+            },
+            3: {
+                moves: {
+                    up: 2, 
+                    upRight: 1,
+                    upLeft: 1,
+                    left: 1,
+                    right: 1,
+                    down: 1,
+                    downRight: 1,
+                    downLeft: 1
+                }
+            }
+        },
+
+        general: {
+            1: {
+                moves: {
+                    up: 1,
+                    upRight: 1,
+                    upLeft: 1,
+                    left: 1,
+                    right: 1,
+                    down: 1
+                }
+            },
+            2: {
+                moves: {
+                    up: 2, 
+                    upRight: 1,
+                    upLeft: 1,
+                    left: 1,
+                    right: 1,
+                    down: 1,
+                    downRight: 1,
+                    downLeft: 1
+                }
+            },
+            3: {
+                moves: {
+                    up: 2, 
+                    upRight: 2,
+                    upLeft: 2,
+                    left: 2,
+                    right: 2,
+                    down: 2,
+                    downRight: 2,
+                    downLeft: 2
+                }
+            }
+        },
+
+        archer: {
+
+        }
+    })
+
     const [pieces, setPieces] = useState<PieceProps[]>(()=>{
         let initialState: PieceProps[] = []
 
@@ -54,7 +193,7 @@ export const BoardProvider: React.FC = ({children}) => {
         for(let i=0; i<4; i++){
             initialState.push({
                 id: 'white-major-general-'+i,
-                name: 'major-general',
+                name: 'majorGeneral',
                 team: 'white'
             })
         }
@@ -62,7 +201,7 @@ export const BoardProvider: React.FC = ({children}) => {
         for(let i=0; i<4; i++){
             initialState.push({
                 id: 'black-major-general-'+i,
-                name: 'major-general',
+                name: 'majorGeneral',
                 team: 'black'
             })
         }
@@ -72,7 +211,7 @@ export const BoardProvider: React.FC = ({children}) => {
         for(let i=0; i<4; i++){
             initialState.push({
                 id: 'white-lieutenant-general-'+i,
-                name: 'lieutenant-general',
+                name: 'lieutenantGeneral',
                 team: 'white'
             })
         }
@@ -80,7 +219,7 @@ export const BoardProvider: React.FC = ({children}) => {
         for(let i=0; i<4; i++){
             initialState.push({
                 id: 'black-lieutenant-general-'+i,
-                name: 'lieutenant-general',
+                name: 'lieutenantGeneral',
                 team: 'black'
             })
         }
@@ -282,99 +421,147 @@ export const BoardProvider: React.FC = ({children}) => {
 
     const [selectedPiece, setSelectedPiece] = useState<PieceProps>(null)
 
-    const [playingNow, setPlayingNow] = useState<'white' | 'black'>('white')
+    const [playingNow, setPlayingNow] = useState<'white' | 'black'>(null)
 
-    const play = useCallback(
-        ({tileId, rowId}: {tileId: string, rowId: string}
+    const [isWhiteOpening, setIsWhiteOpening] = useState(true)
+    const [isBlackOpening, setIsBlackOpening] = useState(true)
+
+    //Esse estado serve pra monitorar quando um movimento válido ocorre
+    //Para alterar em um UseEffect a vez de quem joga e remover a peça selecionada
+    const [validMoveIdentifier, setValidMoveIdentifier] = useState(false)
+
+    const verifyMoves = useCallback((piece: PieceProps, tier: number)=>{
+        console.log(moves[piece.name][tier])
+    },[moves])
+
+    //Esse useEffect verifica quando um movimento válido é feito 
+    //Ou seja, quando o validMoveIdentifier é alterado. 
+    useEffect(()=>{
+        setPlayingNow(state => {
+            if(!state){
+                return 'white'
+            }else{
+                return state === 'white'
+                    ? 'black'
+                    : 'white'
+            }
+        })
+        setSelectedPiece(null)
+    },[validMoveIdentifier])
+    
+    useEffect(()=>{
+        if(
+            (playingNow === 'white' && !isWhiteOpening && isBlackOpening)
+            || (playingNow === 'black' && !isBlackOpening && isWhiteOpening)
+        ){
+            setValidMoveIdentifier(state => !state)
+        }
+    },[playingNow])
+
+    const addPieceFromTheBenchToTheBoard = useCallback((
+        {tileId, rowId, playingNowState, selectedPieceState}: addPieceFromBenchToBoardProps
     )=>{
+        try{
 
-        setPlayingNow(playingNowState => {
-            setSelectedPiece(selectedPieceState => {
-                let shouldRemoveFromTheBench = true
-                
-                setBoard(boardState=>{
-                    const newArray = boardState.map(row => {
-                        if(row.id === rowId){
-        
-                            const newTiles = row.tiles.map(tile => {
-                                if(tile.id === tileId){
-                                    const towerHeight = tile.pieces.length
-                                    const lastPiece = tile.pieces[towerHeight - 1]
+            setBoard(boardState=>{
+                const newArray = boardState.map((row, index) => {
+                    if(row.id === rowId){
+                        
+                        if(
+                            (playingNowState === 'white' && index+1 > 3 && isWhiteOpening
+                            || playingNowState === 'black' && index+1 < 7 && isBlackOpening)
+                        ){
+                            return row
+                        }
 
-                                    //add piece to the tower
-                                    if(towerHeight > 0){
-                                        const topPieceIsFromSameTeam = lastPiece.team === playingNowState
+                        const newTiles = row.tiles.map(tile => {
+                            if(tile.id === tileId){
+                                const towerHeight = tile.pieces.length
+                                const lastPiece = tile.pieces[towerHeight-1]
 
-                                        console.log(towerHeight, topPieceIsFromSameTeam)
+                                //add piece to the tower
+                                if(towerHeight > 0){
+                                    const topPieceIsFromSameTeam = lastPiece.team === playingNowState
 
-                                        //tier up
-                                        if(topPieceIsFromSameTeam){
-                                            if(towerHeight === 3){
-                                                shouldRemoveFromTheBench = false
-        
-                                                return {
-                                                    id: tileId,
-                                                    pieces: [...tile.pieces]
-                                                }
-                                            }
+                                    console.log(towerHeight, topPieceIsFromSameTeam)
 
+                                    //tier up
+                                    if(topPieceIsFromSameTeam){
+                                        if(towerHeight === 3){
+            
                                             return {
                                                 id: tileId,
-                                                pieces: [...tile.pieces, selectedPieceState]
+                                                pieces: [...tile.pieces]
                                             }
                                         }
+                                                
+                                        removePieceFromBench(selectedPieceState)
                                         
-                                        //capture enemy piece
-                                        else{
-                                            const piecesTowerWithoutLastPiece = tile.pieces.filter(piece =>{
-                                                return piece.id !== lastPiece.id
-                                            })
+                                        setValidMoveIdentifier(state => !state)
 
-                                            console.log(piecesTowerWithoutLastPiece)
-
-                                            return{
-                                                id: tileId,
-                                                pieces: [...piecesTowerWithoutLastPiece, selectedPieceState]
-                                            }
-                                        }
-
-                                    }
-                                    //add piece to empty tile
-                                    else{
                                         return {
                                             id: tileId,
                                             pieces: [...tile.pieces, selectedPieceState]
                                         }
                                     }
-                                }
+                                            
+                                            //capture enemy piece
+                                            /* else{
+                                                const piecesTowerWithoutLastPiece = tile.pieces.filter(piece =>{
+                                                    return piece.id !== lastPiece.id
+                                                })
 
-                                if(shouldRemoveFromTheBench){
+                                                console.log(piecesTowerWithoutLastPiece)
+
+                                                return{
+                                                    id: tileId,
+                                                    pieces: [...piecesTowerWithoutLastPiece, selectedPieceState]
+                                                }
+                                            } */
+
+                                    else{
+                                        return {
+                                            id: tileId,
+                                            pieces: [...tile.pieces]
+                                        }
+                                    }
+
+                                }
+                                //add piece to empty tile
+                                else{
                                     removePieceFromBench(selectedPieceState)
-                                }
-        
-                                return tile
-                            })
-            
-                            return {
-                                id: rowId,
-                                tiles: newTiles
-                            }
-                        }
-            
-                        return row
-                    })
-        
-                    return newArray
-                })
-    
-                return null
-            })
+                                            
+                                    setValidMoveIdentifier(state => !state)
 
-            return playingNowState === 'white' 
-                ? 'black'
-                : 'white'
-        })
-    },[])
+                                    return {
+                                        id: tileId,
+                                        pieces: [...tile.pieces, selectedPieceState]
+                                    }
+                                }
+                            }
+            
+                            return tile
+                        })
+                
+                        return {
+                            id: rowId,
+                            tiles: newTiles
+                        }
+                    }
+                
+                    return row
+                })
+            
+                return newArray
+            })
+        }catch(err){
+            console.log(err)
+        }
+    },[moves, isWhiteOpening, isBlackOpening])
+
+    useEffect(()=>{
+        console.log('a função foi recriada')
+    },[addPieceFromTheBenchToTheBoard])
 
     const captureEnemyPiece = useCallback(()=>{
 
@@ -394,13 +581,23 @@ export const BoardProvider: React.FC = ({children}) => {
         })
     },[])
 
+    const finishPlacingPieces = useCallback(()=>{
+        playingNow === 'white' 
+            ? setIsWhiteOpening(false)
+            : setIsBlackOpening(false)
+
+        console.log(playingNow,'terminei de posiciconar')
+    },[playingNow])
+
     const value={
         board,
         pieces,
         selectedPiece,
         setSelectedPiece,
-        play,
-        playingNow
+        addPieceFromTheBenchToTheBoard,
+        playingNow,
+        verifyMoves,
+        finishPlacingPieces
     }
 
     return(

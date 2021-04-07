@@ -16,3 +16,11 @@ export const Board = styled.main`
     display: grid;
     grid-template-rows: repeat(9, 1fr); 
 `
+
+export const Button = styled.button`
+    padding: 4px;
+    border-radius: 4px;
+    background-color: #121212;
+    color: #FFF;
+    border: 0;
+`
