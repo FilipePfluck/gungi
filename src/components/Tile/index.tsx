@@ -27,9 +27,18 @@ const Tile: React.FC<TileProps> = ({pieces, rowId, tileId}) => {
             })
         }
 
-        /* if(pieces[0]){
-            verifyMoves(pieces[pieces.length -1], pieces.length)
-        } */
+        const coordinate = tileId.replace('tile', '')
+
+        const [rowNumber, columnNumber] = coordinate.split('-')
+
+        if(pieces[0]){
+            verifyMoves({
+                piece: pieces[pieces.length -1],
+                tier: pieces.length,
+                columnNumber: Number(columnNumber),
+                rowNumber: Number(rowNumber)
+            })
+        }
     },[selectedPiece])
 
     return(

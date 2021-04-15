@@ -1,4 +1,28 @@
-const moves = {
+type Tiles = {x: number, y: number}[]
+
+type Directions = {
+    type: 'continuous' | 'jump'
+    up?: number
+    down?: number
+    left?: number
+    right?: number
+    upLeft?: number
+    upRight?: number
+    downLeft?: number
+    downRight?: number
+    tiles?: Tiles
+}
+
+interface moveProps{
+    [piece: string]: {
+        [tier: number]: {
+            moves: Directions,
+            attack?: Directions
+        }
+    }
+}
+
+const moves: moveProps = {
     pawn: {
         1: {
             moves: {

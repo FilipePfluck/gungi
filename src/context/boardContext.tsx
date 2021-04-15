@@ -26,8 +26,15 @@ interface ContextValue {
     setSelectedPiece: Dispatch<SetStateAction<PieceProps>>,
     addPieceFromTheBenchToTheBoard: (data: addPieceFromBenchToBoardProps)=>void
     playingNow: 'white' | 'black'
-    verifyMoves: (piece: PieceProps, tier: number) => void
+    verifyMoves: (data: verifyMoves) => void
     finishPlacingPieces: () => void
+}
+
+interface verifyMoves {
+    piece: PieceProps
+    tier: number
+    rowNumber: number
+    columnNumber: number
 }
 
 interface addPieceFromBenchToBoardProps {
@@ -79,9 +86,109 @@ export const BoardProvider: React.FC = ({children}) => {
     //Para alterar em um UseEffect a vez de quem joga e remover a peça selecionada
     const [validMoveIdentifier, setValidMoveIdentifier] = useState(false)
 
-    const verifyMoves = useCallback((piece: PieceProps, tier: number)=>{
-        console.log(moves[piece.name][tier])
-    },[moves])
+
+    const verifyMoves = useCallback(({ piece, tier, columnNumber, rowNumber }:verifyMoves)=>{
+        const pieceMove = moves[piece.name][tier].moves
+
+        const tilesArray = []
+
+        function returnContinuousMoves (direction: string){
+            for(let i=1; i<=pieceMove[direction]; i++){
+                if(
+                    (direction.toLowerCase().includes('up') && playingNow === 'white')
+                    || (direction.toLowerCase().includes('down') && playingNow === 'black')
+                ) {
+                    if(rowNumber+i > 9) break
+                }
+
+                if(
+                    (direction.toLowerCase().includes('down') && playingNow === 'white')
+                    || (direction.toLowerCase().includes('up') && playingNow === 'black') 
+                ){
+                    if(rowNumber-i < 1) break
+                }
+
+                if(
+                    (direction.toLowerCase().includes('right') && playingNow === 'white')
+                    || (direction.toLowerCase().includes('left') && playingNow === 'black')
+                ){
+                    if(columnNumber+i > 9) break
+                }
+
+                if(
+                    (direction.toLowerCase().includes('left') && playingNow === 'white')
+                    || (direction.toLowerCase().includes('right') && playingNow === 'black')
+                ){
+                    if(columnNumber-i < 1) break
+                }
+
+                //I baseado no time, 
+                //considerando que as prestas se movem no sentido contrário das brancas
+                const teamI = playingNow === 'white' 
+                    ? i
+                    : -i
+
+                //Índice do Board
+                const r = direction.toLowerCase().includes('up') 
+                    ? rowNumber-1 + teamI
+                    : direction.toLowerCase().includes('down') 
+                        ? rowNumber-1 - teamI
+                        : rowNumber - 1
+
+                //Índice dos tiles
+                const t = direction.toLowerCase().includes('right')
+                    ? columnNumber-1 + teamI
+                    : direction.toLowerCase().includes('left') 
+                        ? columnNumber-1 - teamI
+                        : columnNumber - 1
+
+                const tile = board[r].tiles[t]
+
+                if(tile.pieces[0]) break
+
+                tilesArray.push(tile)
+            }
+        }
+
+        if(piece.team !== playingNow) return
+
+        if(pieceMove.type === 'continuous'){
+                
+            if(pieceMove.up){
+                returnContinuousMoves('up')
+            }
+
+            if(pieceMove.down){
+                returnContinuousMoves('down')
+            }
+
+            if(pieceMove.right){
+                returnContinuousMoves('right')
+            }
+
+            if(pieceMove.left){
+                returnContinuousMoves('left')
+            }
+
+            if(pieceMove.upRight){
+                returnContinuousMoves('upRight')
+            }
+
+/*             if(pieceMove.upLeft){
+                returnContinuousMoves('upLeft')
+            } */
+
+            if(pieceMove.downRight){
+                returnContinuousMoves('downRight')
+            }
+
+            if(pieceMove.downLeft){
+                returnContinuousMoves('downLeft')
+            }
+
+            console.log(tilesArray)
+        }
+    },[moves, board, playingNow])
 
     //Esse useEffect verifica quando um movimento válido é feito 
     //Ou seja, quando o validMoveIdentifier é alterado. 

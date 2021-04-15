@@ -112,7 +112,7 @@ for(let i=0; i<2; i++){
 
 for(let i=0; i<2; i++){
     initialPieces.push({
-        id: 'white-musketeer-'+1,
+        id: 'white-musketeer-'+i,
         name: 'musketeer',
         team: 'white'
     })
@@ -120,7 +120,7 @@ for(let i=0; i<2; i++){
 
 for(let i=0; i<2; i++){
     initialPieces.push({
-        id: 'black-musketeer-'+1,
+        id: 'black-musketeer-'+i,
         name: 'musketeer',
         team: 'black'
     })
