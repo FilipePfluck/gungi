@@ -28,6 +28,7 @@ interface ContextValue {
     playingNow: 'white' | 'black'
     verifyMoves: (data: verifyMoves) => void
     finishPlacingPieces: () => void
+    verifyIfSelectedPieceCanMoveToThisTile: (id: string) => boolean
 }
 
 interface verifyMoves {
@@ -77,6 +78,8 @@ export const BoardProvider: React.FC = ({children}) => {
 
     const [selectedPiece, setSelectedPiece] = useState<PieceProps>(null)
 
+    const [selectedPieceTileMoves, setSelectedPieceTileMoves] = useState<TileProps[]>(null)
+
     const [playingNow, setPlayingNow] = useState<'white' | 'black'>(null)
 
     const [isWhiteOpening, setIsWhiteOpening] = useState(true)
@@ -87,13 +90,32 @@ export const BoardProvider: React.FC = ({children}) => {
     const [validMoveIdentifier, setValidMoveIdentifier] = useState(false)
 
 
+    const verifyIfSelectedPieceCanMoveToThisTile = useCallback((id: string)=>{
+        if(selectedPieceTileMoves){
+            const index = selectedPieceTileMoves.findIndex(tile=>{
+                return tile.id === id
+            })
+
+            return index < 0 ? false : true
+        }
+
+        return false
+    },[selectedPieceTileMoves])
+
     const verifyMoves = useCallback(({ piece, tier, columnNumber, rowNumber }:verifyMoves)=>{
         const pieceMove = moves[piece.name][tier].moves
 
         const tilesArray = []
 
+        let shouldBreak = false
+
         function returnContinuousMoves (direction: string){
             for(let i=1; i<=pieceMove[direction]; i++){
+                if(shouldBreak) {
+                    shouldBreak = false
+                    break
+                }
+
                 if(
                     (direction.toLowerCase().includes('up') && playingNow === 'white')
                     || (direction.toLowerCase().includes('down') && playingNow === 'black')
@@ -144,10 +166,39 @@ export const BoardProvider: React.FC = ({children}) => {
 
                 const tile = board[r].tiles[t]
 
-                if(tile.pieces[0]) break
+                const tilePieces = tile.pieces
+                const tileHeight = tile.pieces.length
+
+                if(tilePieces[2] && tilePieces[2].team === playingNow) break
+
+                if(
+                    tilePieces[0] && 
+                    tilePieces[tileHeight-1].team !== playingNow
+                ){
+                    shouldBreak = true
+                }else {
+                    shouldBreak = false
+                }
 
                 tilesArray.push(tile)
             }
+        }
+
+        function returnJumpMoves (tiles: {x: number, y: number}[]){
+            tiles.forEach(tile => {
+                const r = rowNumber-1 + tile.y
+                const t = columnNumber-1 + tile.x
+
+                if(r >= 0 && r <= 8 && t >= 0 && t <= 8){
+                    const tileToGo = board[r].tiles[t]
+
+                    if(!(tileToGo.pieces[2] 
+                        && tileToGo.pieces[2].team === playingNow
+                    )){
+                        tilesArray.push(board[r].tiles[t])
+                    }
+                }
+            })
         }
 
         if(piece.team !== playingNow) return
@@ -174,9 +225,9 @@ export const BoardProvider: React.FC = ({children}) => {
                 returnContinuousMoves('upRight')
             }
 
-/*             if(pieceMove.upLeft){
+            if(pieceMove.upLeft){
                 returnContinuousMoves('upLeft')
-            } */
+            }
 
             if(pieceMove.downRight){
                 returnContinuousMoves('downRight')
@@ -188,6 +239,18 @@ export const BoardProvider: React.FC = ({children}) => {
 
             console.log(tilesArray)
         }
+
+        if(pieceMove.type === 'jump'){
+            console.log('jump')
+
+            if(pieceMove.tiles[0]){
+                returnJumpMoves(pieceMove.tiles)
+            }
+
+            console.log(tilesArray)
+        }
+
+        setSelectedPieceTileMoves(tilesArray)
     },[moves, board, playingNow])
 
     //Esse useEffect verifica quando um movimento válido é feito 
@@ -353,7 +416,8 @@ export const BoardProvider: React.FC = ({children}) => {
         addPieceFromTheBenchToTheBoard,
         playingNow,
         verifyMoves,
-        finishPlacingPieces
+        finishPlacingPieces,
+        verifyIfSelectedPieceCanMoveToThisTile
     }
 
     return(

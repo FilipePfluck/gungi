@@ -15,7 +15,9 @@ interface TileProps {
 }
 
 const Tile: React.FC<TileProps> = ({pieces, rowId, tileId}) => {
-    const { addPieceFromTheBenchToTheBoard, selectedPiece, setSelectedPiece, verifyMoves, playingNow } = UseBoard()
+    const { addPieceFromTheBenchToTheBoard, selectedPiece, setSelectedPiece, verifyMoves, playingNow, verifyIfSelectedPieceCanMoveToThisTile } = UseBoard()
+
+    const selectedPieceCanMoveToThisTIle = verifyIfSelectedPieceCanMoveToThisTile(tileId)
 
     const handleClickTile = useCallback(()=>{
         if(selectedPiece){
@@ -44,6 +46,7 @@ const Tile: React.FC<TileProps> = ({pieces, rowId, tileId}) => {
     return(
         <S.Container
             onClick={handleClickTile}
+            isGreen={selectedPieceCanMoveToThisTIle}
         >
             {pieces.map(piece => (
                 <S.Piece key={piece.id} team={piece.team}>

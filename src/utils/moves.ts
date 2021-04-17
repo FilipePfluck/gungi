@@ -510,7 +510,8 @@ const moves: moveProps = {
                 left: 9,
                 right: 9,
                 downLeft: 9,
-                downRight: 9
+                downRight: 9,
+                down: 9
             }
         }
     },

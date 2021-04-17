@@ -4,10 +4,14 @@ interface PieceProps {
     team: 'white' | 'black'
 }
 
-export const Container = styled.div`
+interface ContainerProps {
+    isGreen: boolean
+}
+
+export const Container = styled.div<ContainerProps>`
     position: relative;
 
-    background-color: #CFAB4D;
+    background-color: ${props => props.isGreen ? '#769656': "#CFAB4D"};
     border: 1px solid #845F2A;
 
     display: flex;
