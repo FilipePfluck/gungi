@@ -15,7 +15,7 @@ interface TileProps {
 }
 
 const Tile: React.FC<TileProps> = ({pieces, rowId, tileId}) => {
-    const { addPieceFromTheBenchToTheBoard, selectedPiece, setSelectedPiece, verifyMoves, playingNow, verifyIfSelectedPieceCanMoveToThisTile } = UseBoard()
+    const { addPieceFromTheBenchToTheBoard, selectedPiece, setSelectedPieceIsFromBoard, verifyMoves, playingNow, verifyIfSelectedPieceCanMoveToThisTile } = UseBoard()
 
     const selectedPieceCanMoveToThisTIle = verifyIfSelectedPieceCanMoveToThisTile(tileId)
 
@@ -40,6 +40,8 @@ const Tile: React.FC<TileProps> = ({pieces, rowId, tileId}) => {
                 columnNumber: Number(columnNumber),
                 rowNumber: Number(rowNumber)
             })
+
+            setSelectedPieceIsFromBoard(true)
         }
     },[selectedPiece])
 

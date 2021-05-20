@@ -29,6 +29,8 @@ interface ContextValue {
     verifyMoves: (data: verifyMoves) => void
     finishPlacingPieces: () => void
     verifyIfSelectedPieceCanMoveToThisTile: (id: string) => boolean
+    selectedPieceIsFromBoard: boolean
+    setSelectedPieceIsFromBoard:  Dispatch<SetStateAction<boolean>>
 }
 
 interface verifyMoves {
@@ -77,7 +79,7 @@ export const BoardProvider: React.FC = ({children}) => {
     })
 
     const [selectedPiece, setSelectedPiece] = useState<PieceProps>(null)
-
+    const [selectedPieceIsFromBoard, setSelectedPieceIsFromBoard] = useState(false)
     const [selectedPieceTileMoves, setSelectedPieceTileMoves] = useState<TileProps[]>(null)
 
     const [playingNow, setPlayingNow] = useState<'white' | 'black'>(null)
@@ -151,20 +153,20 @@ export const BoardProvider: React.FC = ({children}) => {
                     : -i
 
                 //Índice do Board
-                const r = direction.toLowerCase().includes('up') 
+                const rowIndex = direction.toLowerCase().includes('up') 
                     ? rowNumber-1 + teamI
                     : direction.toLowerCase().includes('down') 
                         ? rowNumber-1 - teamI
                         : rowNumber - 1
 
                 //Índice dos tiles
-                const t = direction.toLowerCase().includes('right')
+                const tileIndex = direction.toLowerCase().includes('right')
                     ? columnNumber-1 + teamI
                     : direction.toLowerCase().includes('left') 
                         ? columnNumber-1 - teamI
                         : columnNumber - 1
 
-                const tile = board[r].tiles[t]
+                const tile = board[rowIndex].tiles[tileIndex]
 
                 const tilePieces = tile.pieces
                 const tileHeight = tile.pieces.length
@@ -172,8 +174,8 @@ export const BoardProvider: React.FC = ({children}) => {
                 if(tilePieces[2] && tilePieces[2].team === playingNow) break
 
                 if(
-                    tilePieces[0] && 
-                    tilePieces[tileHeight-1].team !== playingNow
+                    tilePieces[0] //&& 
+                    //tilePieces[tileHeight-1].team !== playingNow
                 ){
                     shouldBreak = true
                 }else {
@@ -266,6 +268,8 @@ export const BoardProvider: React.FC = ({children}) => {
             }
         })
         setSelectedPiece(null)
+        setSelectedPieceTileMoves([])
+        setSelectedPieceIsFromBoard(false)
     },[validMoveIdentifier])
     
     useEffect(()=>{
@@ -382,6 +386,12 @@ export const BoardProvider: React.FC = ({children}) => {
         console.log('a função foi recriada')
     },[addPieceFromTheBenchToTheBoard])
 
+    const movePiece = useCallback(()=>{
+        if(selectedPieceIsFromBoard){
+            
+        }
+    },[])
+
     const captureEnemyPiece = useCallback(()=>{
 
     },[])
@@ -417,7 +427,9 @@ export const BoardProvider: React.FC = ({children}) => {
         playingNow,
         verifyMoves,
         finishPlacingPieces,
-        verifyIfSelectedPieceCanMoveToThisTile
+        verifyIfSelectedPieceCanMoveToThisTile,
+        selectedPieceIsFromBoard,
+        setSelectedPieceIsFromBoard
     }
 
     return(
