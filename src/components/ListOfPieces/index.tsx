@@ -4,7 +4,7 @@ import { UseBoard } from '../../context/boardContext'
 import * as S from './styles'
 
 const ListOfPieces = () => {
-    const { pieces, setSelectedPiece, playingNow } = UseBoard()
+    const { pieces, clickPieceInBench } = UseBoard()
     
     return (
         <S.Container>
@@ -12,9 +12,7 @@ const ListOfPieces = () => {
                 <S.Piece 
                     key={piece.id} 
                     team={piece.team} 
-                    onClick={()=>{
-                        playingNow === piece.team && setSelectedPiece(piece)
-                    }}
+                    onClick={()=>{clickPieceInBench(piece)}}
                 >
                     <div>
                         <img src={`/${piece.name}.svg`} alt={piece.name}/>

@@ -7,19 +7,20 @@ import ListOfPieces from '../../components/ListOfPieces'
 import * as S from './styles'
 
 const Board = () => {
-    const { board, finishPlacingPieces } = UseBoard()
+    const { board, playingNow } = UseBoard()
 
     return(
         <S.Container>
             <ListOfPieces/>
-            <S.Board>
-                {board.map(row => (
-                    <Row rowId={row.id} key={row.id} tiles={row.tiles}/>
-                ))}
-            </S.Board>
-            <S.Button onClick={finishPlacingPieces}>
-                Terminei de posicionar as peças
-            </S.Button>
+            <S.RightContainer>
+                <strong>Brancas {playingNow === 'white' && '- Jogando'}</strong>
+                <S.Board>
+                    {board.map(row => (
+                        <Row rowId={row.id} key={row.id} tiles={row.tiles}/>
+                    ))}
+                </S.Board>
+                <strong>Pretas {playingNow === 'black' && '- Jogando'}</strong>
+            </S.RightContainer>
         </S.Container>
     )
 }

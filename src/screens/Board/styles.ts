@@ -9,6 +9,16 @@ export const Container = styled.div`
     justify-content: center;
 `
 
+export const RightContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+
+    strong{
+        margin: 16px 0;
+        font-size: 24px;
+    }
+`
+
 export const Board = styled.main`
     width: 560px;
     height: 560px;

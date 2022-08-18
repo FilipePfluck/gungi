@@ -24,13 +24,11 @@ interface ContextValue {
     pieces: PieceProps[],
     selectedPiece: PieceProps | null
     setSelectedPiece: Dispatch<SetStateAction<PieceProps>>,
-    addPieceFromTheBenchToTheBoard: (data: addPieceFromBenchToBoardProps)=>void
     playingNow: 'white' | 'black'
     verifyMoves: (data: verifyMoves) => void
-    finishPlacingPieces: () => void
     verifyIfSelectedPieceCanMoveToThisTile: (id: string) => boolean
-    selectedPieceIsFromBoard: boolean
-    setSelectedPieceIsFromBoard:  Dispatch<SetStateAction<boolean>>
+    handleClickTile: (props: handleClickTileProps) => void
+    clickPieceInBench: (piece: PieceProps) => void
 }
 
 interface verifyMoves {
@@ -43,14 +41,31 @@ interface verifyMoves {
 interface addPieceFromBenchToBoardProps {
     tileId: string
     rowId: string
-    playingNowState: 'white' | 'black'
-    selectedPieceState: PieceProps | null
+}
+
+interface handleClickTileProps {
+    pieces: PieceProps[],
+    tileId: string,
+    rowId: string
+}
+
+interface Coordinate {
+    rowIndex: number
+    columnIndex: number
+}
+
+interface RemoveTopPieceProps {
+    serializedBoard?: RowProps[]
+}
+
+interface AddPieceToNewTileProps extends Coordinate {
+    removeFromPreviousTile: (serializedBoard?: RowProps[]) => RowProps[] | void
 }
 
 const BoardContext = createContext({} as ContextValue)
 
 export const BoardProvider: React.FC = ({children}) => {
-    const [moves, setMoves] = useState(movesInitialState)
+    const [moves] = useState(movesInitialState)
 
     const [pieces, setPieces] = useState<PieceProps[]>(startingPiecesState)
 
@@ -79,44 +94,109 @@ export const BoardProvider: React.FC = ({children}) => {
     })
 
     const [selectedPiece, setSelectedPiece] = useState<PieceProps>(null)
-    const [selectedPieceIsFromBoard, setSelectedPieceIsFromBoard] = useState(false)
+    const [selectedPiecePosition, setSelectedPiecePosition] = useState<Coordinate>(null)
+    const [selectedPieceIsFromBench, setSelectedPieceIsFromBench] = useState(false)
     const [selectedPieceTileMoves, setSelectedPieceTileMoves] = useState<TileProps[]>(null)
 
     const [playingNow, setPlayingNow] = useState<'white' | 'black'>(null)
+    const [roundNumber, setRoundNumber] = useState(1)
+    const isStarting = roundNumber < 2
 
-    const [isWhiteOpening, setIsWhiteOpening] = useState(true)
-    const [isBlackOpening, setIsBlackOpening] = useState(true)
-
-    //Esse estado serve pra monitorar quando um movimento válido ocorre
-    //Para alterar em um UseEffect a vez de quem joga e remover a peça selecionada
+    //This state is used to watch when a valid move ocurs
+    //To change in a useEffect which team is playing and unselect the selected piece
     const [validMoveIdentifier, setValidMoveIdentifier] = useState(false)
 
+    //This useEffect watches when a valid move ocurs
+    useEffect(()=>{
+        setPlayingNow(state => {
+            if(!state){
+                return 'white'
+            }else{
+                if(state === 'black'){
+                    setRoundNumber(state => state+1)
+                    return 'white'
+                }
+                
+                return 'black'
+            }
+        })
+        setSelectedPiece(null)
+        setSelectedPieceTileMoves([])
+        setSelectedPieceIsFromBench(false)
+    },[validMoveIdentifier])
 
-    const verifyIfSelectedPieceCanMoveToThisTile = useCallback((id: string)=>{
+    useEffect(()=>{
+        console.log(selectedPiece)
+    },[selectedPiece])
+
+    const verifyIfSelectedPieceCanMoveToThisTile = (id: string)=>{
         if(selectedPieceTileMoves){
             const index = selectedPieceTileMoves.findIndex(tile=>{
                 return tile.id === id
             })
 
-            return index < 0 ? false : true
+            return index >= 0 
         }
 
         return false
-    },[selectedPieceTileMoves])
+    }
 
-    const verifyMoves = useCallback(({ piece, tier, columnNumber, rowNumber }:verifyMoves)=>{
-        const pieceMove = moves[piece.name][tier].moves
+    const verifyMoves = ({ piece, tier, columnNumber, rowNumber }:verifyMoves)=>{
+        const pieceMove = moves[piece.name][tier]?.moves
 
         const tilesArray = []
 
         let shouldBreak = false
 
-        function returnContinuousMoves (direction: string){
+        function calculateContinuousMoves (direction: string){
+            const directions = {
+                up: {
+                    direction: 'vertical',
+                    increasing: true,
+                    inverse: 'down'
+                },
+                down: {
+                    direction: 'vertical',
+                    increasing: false,
+                    inverse: 'up'
+                },
+                left: {
+                    direction: 'horizontal',
+                    increasing: false,
+                    inverse: 'right'
+                },
+                right: {
+                    direction: 'horizontal',
+                    increasing: true,
+                    inverse: 'left'
+                }
+            }
+
             for(let i=1; i<=pieceMove[direction]; i++){
                 if(shouldBreak) {
                     shouldBreak = false
                     break
                 }
+
+                let surpassedBoard = false
+
+                Object.keys(directions).forEach(key=>{
+                    const _direction = playingNow === 'white' 
+                        ? directions[key] 
+                        : directions[directions[key].inverse]
+
+                    const index = _direction.direction === 'horizontal' 
+                        ? rowNumber 
+                        : columnNumber
+
+                    if(direction.toLowerCase().includes(_direction)){
+                        surpassedBoard = _direction.increasing 
+                            ? index+i > 9
+                            : index-i < 1
+                    }
+                })
+
+                if(surpassedBoard) break
 
                 if(
                     (direction.toLowerCase().includes('up') && playingNow === 'white')
@@ -173,20 +253,13 @@ export const BoardProvider: React.FC = ({children}) => {
 
                 if(tilePieces[2] && tilePieces[2].team === playingNow) break
 
-                if(
-                    tilePieces[0] //&& 
-                    //tilePieces[tileHeight-1].team !== playingNow
-                ){
-                    shouldBreak = true
-                }else {
-                    shouldBreak = false
-                }
+                shouldBreak = !!tilePieces[0]
 
                 tilesArray.push(tile)
             }
         }
 
-        function returnJumpMoves (tiles: {x: number, y: number}[]){
+        function calculateJumpMoves (tiles: {x: number, y: number}[]){
             tiles.forEach(tile => {
                 const r = rowNumber-1 + tile.y
                 const t = columnNumber-1 + tile.x
@@ -206,230 +279,160 @@ export const BoardProvider: React.FC = ({children}) => {
         if(piece.team !== playingNow) return
 
         if(pieceMove.type === 'continuous'){
-                
-            if(pieceMove.up){
-                returnContinuousMoves('up')
-            }
+            const keys = Object.keys(pieceMove)
+                .filter(key => key !== 'type' && key !== 'tiles')
 
-            if(pieceMove.down){
-                returnContinuousMoves('down')
-            }
-
-            if(pieceMove.right){
-                returnContinuousMoves('right')
-            }
-
-            if(pieceMove.left){
-                returnContinuousMoves('left')
-            }
-
-            if(pieceMove.upRight){
-                returnContinuousMoves('upRight')
-            }
-
-            if(pieceMove.upLeft){
-                returnContinuousMoves('upLeft')
-            }
-
-            if(pieceMove.downRight){
-                returnContinuousMoves('downRight')
-            }
-
-            if(pieceMove.downLeft){
-                returnContinuousMoves('downLeft')
-            }
-
-            console.log(tilesArray)
+            keys.forEach(key => {
+                calculateContinuousMoves(key)
+            })
         }
 
         if(pieceMove.type === 'jump'){
-            console.log('jump')
-
             if(pieceMove.tiles[0]){
-                returnJumpMoves(pieceMove.tiles)
+                calculateJumpMoves(pieceMove.tiles)
             }
+        }
 
-            console.log(tilesArray)
+        if(!tilesArray.length){
+            setSelectedPiece(null)
+            return
         }
 
         setSelectedPieceTileMoves(tilesArray)
-    },[moves, board, playingNow])
+    }
 
-    //Esse useEffect verifica quando um movimento válido é feito 
-    //Ou seja, quando o validMoveIdentifier é alterado. 
-    useEffect(()=>{
-        setPlayingNow(state => {
-            if(!state){
-                return 'white'
-            }else{
-                return state === 'white'
-                    ? 'black'
-                    : 'white'
-            }
-        })
-        setSelectedPiece(null)
-        setSelectedPieceTileMoves([])
-        setSelectedPieceIsFromBoard(false)
-    },[validMoveIdentifier])
+    const clickPieceInBench = (piece: PieceProps) => {
+        if(playingNow === piece.team){
+            setSelectedPiece(piece)
+            setSelectedPieceIsFromBench(true)
+        }
+    }
     
-    useEffect(()=>{
-        if(
-            (playingNow === 'white' && !isWhiteOpening && isBlackOpening)
-            || (playingNow === 'black' && !isBlackOpening && isWhiteOpening)
-        ){
-            setValidMoveIdentifier(state => !state)
-        }
-    },[playingNow])
-
-    const addPieceFromTheBenchToTheBoard = useCallback((
-        {tileId, rowId, playingNowState, selectedPieceState}: addPieceFromBenchToBoardProps
-    )=>{
-        try{
-
-            setBoard(boardState=>{
-                const newArray = boardState.map((row, index) => {
-                    if(row.id === rowId){
-                        
-                        if(
-                            (playingNowState === 'white' && index+1 > 3 && isWhiteOpening
-                            || playingNowState === 'black' && index+1 < 7 && isBlackOpening)
-                        ){
-                            return row
-                        }
-
-                        const newTiles = row.tiles.map(tile => {
-                            if(tile.id === tileId){
-                                const towerHeight = tile.pieces.length
-                                const lastPiece = tile.pieces[towerHeight-1]
-
-                                //add piece to the tower
-                                if(towerHeight > 0){
-                                    const topPieceIsFromSameTeam = lastPiece.team === playingNowState
-
-                                    console.log(towerHeight, topPieceIsFromSameTeam)
-
-                                    //tier up
-                                    if(topPieceIsFromSameTeam){
-                                        if(towerHeight === 3){
-            
-                                            return {
-                                                id: tileId,
-                                                pieces: [...tile.pieces]
-                                            }
-                                        }
-                                                
-                                        removePieceFromBench(selectedPieceState)
-                                        
-                                        setValidMoveIdentifier(state => !state)
-
-                                        return {
-                                            id: tileId,
-                                            pieces: [...tile.pieces, selectedPieceState]
-                                        }
-                                    }
-                                            
-                                            //capture enemy piece
-                                            /* else{
-                                                const piecesTowerWithoutLastPiece = tile.pieces.filter(piece =>{
-                                                    return piece.id !== lastPiece.id
-                                                })
-
-                                                console.log(piecesTowerWithoutLastPiece)
-
-                                                return{
-                                                    id: tileId,
-                                                    pieces: [...piecesTowerWithoutLastPiece, selectedPieceState]
-                                                }
-                                            } */
-
-                                    else{
-                                        return {
-                                            id: tileId,
-                                            pieces: [...tile.pieces]
-                                        }
-                                    }
-
-                                }
-                                //add piece to empty tile
-                                else{
-                                    removePieceFromBench(selectedPieceState)
-                                            
-                                    setValidMoveIdentifier(state => !state)
-
-                                    return {
-                                        id: tileId,
-                                        pieces: [...tile.pieces, selectedPieceState]
-                                    }
-                                }
-                            }
-            
-                            return tile
-                        })
-                
-                        return {
-                            id: rowId,
-                            tiles: newTiles
-                        }
-                    }
-                
-                    return row
-                })
-            
-                return newArray
-            })
-        }catch(err){
-            console.log(err)
-        }
-    },[moves, isWhiteOpening, isBlackOpening])
-
-    useEffect(()=>{
-        console.log('a função foi recriada')
-    },[addPieceFromTheBenchToTheBoard])
-
-    const movePiece = useCallback(()=>{
-        if(selectedPieceIsFromBoard){
-            
-        }
-    },[])
-
-    const captureEnemyPiece = useCallback(()=>{
-
-    },[])
-
-    const tierUp = useCallback(()=>{
-
-    },[])
-
-    const removePieceFromBench = useCallback((selectedPieceState: PieceProps)=>{
+    const removePieceFromBench = ()=>{
         setPieces(piecesState => {
             const newArray = piecesState.filter(piece => {
-                return piece.id !== selectedPieceState.id
+                return piece.id !== selectedPiece.id
             })
 
             return newArray
         })
-    },[])
+    }
 
-    const finishPlacingPieces = useCallback(()=>{
-        playingNow === 'white' 
-            ? setIsWhiteOpening(false)
-            : setIsBlackOpening(false)
+    const removeSelectedPieceFromPreviousTile = ({serializedBoard}: RemoveTopPieceProps) => {
+        const rowIndex = selectedPiecePosition.rowIndex
+        const columnIndex = selectedPiecePosition.columnIndex
 
-        console.log(playingNow,'terminei de posiciconar')
-    },[playingNow])
+        const boardCopy = !!serializedBoard ? [...serializedBoard] : [...board]
+        boardCopy[rowIndex].tiles[columnIndex].pieces.pop()
+        return boardCopy
+    }
+
+    const addPieceToNewTile = ({rowIndex, columnIndex}: Coordinate) => {
+        //The first piece to be placed must be the king
+        if(roundNumber === 1 && selectedPiece.name !== 'king') return
+
+        //prevent the player from placing a piece outside of his base
+        //when the game is starting (in the first 20 rounds)
+        if(
+            ((playingNow === 'white' && rowIndex+1 > 3) 
+            || (playingNow === 'black' && rowIndex+1 < 7))
+            && isStarting
+        ) return
+
+        const boardCopy = [...board]
+        const tile = boardCopy[rowIndex].tiles[columnIndex]
+        
+        const isAValidMove = verifyIfSelectedPieceCanMoveToThisTile(tile.id)
+        
+        if(!selectedPieceIsFromBench && !isAValidMove) return
+
+        const towerHeight = tile.pieces.length
+        const lastPiece = tile.pieces[towerHeight-1]
+
+        //there are pieces in the tile
+        if(towerHeight > 0){
+            const topPieceIsFromSameTeam = lastPiece.team === playingNow
+
+            if(topPieceIsFromSameTeam){
+                if(towerHeight === 3) return
+                                                 
+                tile.pieces = [...tile.pieces, selectedPiece]
+            }
+
+            else{
+                // The piece is an enemy, so don't do anything
+                if(selectedPieceIsFromBench) return
+
+                //capture enemy piece
+                tile.pieces.pop()
+                tile.pieces = [...tile.pieces, selectedPiece]
+            }
+        }
+
+        //the tile is empty
+        else{      
+            tile.pieces = [selectedPiece]
+            console.log([selectedPiece])
+        }
+
+        boardCopy[rowIndex].tiles[columnIndex] = tile
+
+        if(selectedPieceIsFromBench){
+            removePieceFromBench()
+        }
+
+        const boardAfterRemovingPieceFromPreviousTile = !selectedPieceIsFromBench 
+            ? removeSelectedPieceFromPreviousTile({serializedBoard: boardCopy}) 
+            : null 
+            
+        setBoard(boardAfterRemovingPieceFromPreviousTile || boardCopy)
+        setValidMoveIdentifier(state => !state)
+    }
+
+    const handleClickTile = ({rowId, tileId, pieces: tilePieces}: handleClickTileProps)=>{
+        const coordinate = tileId.replace('tile', '')
+        const [rowNumber, columnNumber] = coordinate.split('-')
+            
+        const columnIndex = Number(columnNumber) - 1
+        const rowIndex = Number(rowNumber) - 1
+        const piece = tilePieces[tilePieces.length -1]
+
+        if(selectedPiece){
+            if(selectedPieceIsFromBench){
+                addPieceToNewTile({
+                    columnIndex,
+                    rowIndex,
+                })
+            }else{
+                addPieceToNewTile({
+                    columnIndex,
+                    rowIndex,
+                })
+            }
+        }
+
+        if(tilePieces[0] && !isStarting && !selectedPiece && piece.team === playingNow){
+            verifyMoves({
+                piece,
+                tier: tilePieces.length,
+                columnNumber: Number(columnNumber),
+                rowNumber: Number(rowNumber)
+            })
+            setSelectedPiece(piece)
+            setSelectedPiecePosition({columnIndex, rowIndex})
+        }
+    }
 
     const value={
         board,
         pieces,
         selectedPiece,
         setSelectedPiece,
-        addPieceFromTheBenchToTheBoard,
         playingNow,
         verifyMoves,
-        finishPlacingPieces,
         verifyIfSelectedPieceCanMoveToThisTile,
-        selectedPieceIsFromBoard,
-        setSelectedPieceIsFromBoard
+        handleClickTile,
+        clickPieceInBench
     }
 
     return(

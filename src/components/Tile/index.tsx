@@ -15,39 +15,13 @@ interface TileProps {
 }
 
 const Tile: React.FC<TileProps> = ({pieces, rowId, tileId}) => {
-    const { addPieceFromTheBenchToTheBoard, selectedPiece, setSelectedPieceIsFromBoard, verifyMoves, playingNow, verifyIfSelectedPieceCanMoveToThisTile } = UseBoard()
+    const { verifyIfSelectedPieceCanMoveToThisTile, handleClickTile } = UseBoard()
 
     const selectedPieceCanMoveToThisTIle = verifyIfSelectedPieceCanMoveToThisTile(tileId)
 
-    const handleClickTile = useCallback(()=>{
-        if(selectedPiece){
-            addPieceFromTheBenchToTheBoard({
-                rowId, 
-                tileId, 
-                playingNowState: playingNow, 
-                selectedPieceState: selectedPiece 
-            })
-        }
-
-        const coordinate = tileId.replace('tile', '')
-
-        const [rowNumber, columnNumber] = coordinate.split('-')
-
-        if(pieces[0]){
-            verifyMoves({
-                piece: pieces[pieces.length -1],
-                tier: pieces.length,
-                columnNumber: Number(columnNumber),
-                rowNumber: Number(rowNumber)
-            })
-
-            setSelectedPieceIsFromBoard(true)
-        }
-    },[selectedPiece])
-
     return(
         <S.Container
-            onClick={handleClickTile}
+            onClick={() => handleClickTile({pieces, rowId, tileId})}
             isGreen={selectedPieceCanMoveToThisTIle}
         >
             {pieces.map(piece => (
