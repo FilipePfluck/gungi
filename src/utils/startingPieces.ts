@@ -20,7 +20,7 @@ for(let i=0; i<9; i++){
 
 //Major generals
 
-for(let i=0; i<4; i++){
+for(let i=0; i<5; i++){
     initialPieces.push({
         id: 'white-major-general-'+i,
         name: 'majorGeneral',
@@ -28,7 +28,7 @@ for(let i=0; i<4; i++){
     })
 }
 
-for(let i=0; i<4; i++){
+for(let i=0; i<5; i++){
     initialPieces.push({
         id: 'black-major-general-'+i,
         name: 'majorGeneral',
@@ -38,7 +38,7 @@ for(let i=0; i<4; i++){
 
 //lieutenant general
 
-for(let i=0; i<4; i++){
+for(let i=0; i<5; i++){
     initialPieces.push({
         id: 'white-lieutenant-general-'+i,
         name: 'lieutenantGeneral',
@@ -46,7 +46,7 @@ for(let i=0; i<4; i++){
     })
 }
 
-for(let i=0; i<4; i++){
+for(let i=0; i<5; i++){
     initialPieces.push({
         id: 'black-lieutenant-general-'+i,
         name: 'lieutenantGeneral',
@@ -56,7 +56,7 @@ for(let i=0; i<4; i++){
 
 //General 
 
-for(let i=0; i<5; i++){
+for(let i=0; i<3; i++){
     initialPieces.push({
         id: 'white-general-'+i,
         name: 'general',
@@ -64,7 +64,7 @@ for(let i=0; i<5; i++){
     })
 }
 
-for(let i=0; i<5; i++){
+for(let i=0; i<3; i++){
     initialPieces.push({
         id: 'black-general-'+i,
         name: 'general',

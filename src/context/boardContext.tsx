@@ -6,7 +6,7 @@ import startingPiecesState from '../utils/startingPieces'
 interface PieceProps {
     id: string
     name: string
-    team: string
+    team: 'white' | 'black'
 }
 
 interface TileProps {
@@ -25,7 +25,6 @@ interface ContextValue {
     selectedPiece: PieceProps | null
     setSelectedPiece: Dispatch<SetStateAction<PieceProps>>,
     playingNow: 'white' | 'black'
-    verifyMoves: (data: verifyMoves) => void
     verifyIfSelectedPieceCanMoveToThisTile: (id: string) => boolean
     handleClickTile: (props: handleClickTileProps) => void
     clickPieceInBench: (piece: PieceProps) => void
@@ -58,8 +57,14 @@ interface RemoveTopPieceProps {
     serializedBoard?: RowProps[]
 }
 
-interface AddPieceToNewTileProps extends Coordinate {
-    removeFromPreviousTile: (serializedBoard?: RowProps[]) => RowProps[] | void
+interface PieceInTheBoard {
+    [id: string]: {
+        name: string
+        team: 'white' | 'black'
+        rowIndex: number
+        columnIndex: number,
+        tier: number
+    }
 }
 
 const BoardContext = createContext({} as ContextValue)
@@ -68,6 +73,7 @@ export const BoardProvider: React.FC = ({children}) => {
     const [moves] = useState(movesInitialState)
 
     const [pieces, setPieces] = useState<PieceProps[]>(startingPiecesState)
+    const [piecesInTheBoard, setPiecesInTheBoard] = useState<PieceInTheBoard>({})
 
     const [board, setBoard]= useState<RowProps[]>(()=>{
         let initialState = []
@@ -126,8 +132,8 @@ export const BoardProvider: React.FC = ({children}) => {
     },[validMoveIdentifier])
 
     useEffect(()=>{
-        console.log(selectedPiece)
-    },[selectedPiece])
+        console.log(piecesInTheBoard)
+    },[piecesInTheBoard])
 
     const verifyIfSelectedPieceCanMoveToThisTile = (id: string)=>{
         if(selectedPieceTileMoves){
@@ -276,7 +282,7 @@ export const BoardProvider: React.FC = ({children}) => {
             })
         }
 
-        if(piece.team !== playingNow) return
+        //if(piece.team !== playingNow) return
 
         if(pieceMove.type === 'continuous'){
             const keys = Object.keys(pieceMove)
@@ -298,7 +304,39 @@ export const BoardProvider: React.FC = ({children}) => {
             return
         }
 
-        setSelectedPieceTileMoves(tilesArray)
+        return tilesArray
+    }
+
+    const verifyIfKingIsChecked = (team: 'black' | 'white') => {
+        const enemyPieces = Object.entries(piecesInTheBoard).filter(([key, value]) => {
+            return value.team === (team === 'white' ? 'black' : 'white')
+        })
+        
+        const king = piecesInTheBoard[`${team}-king-1`]
+
+        return enemyPieces?.some(([id, value]) => {
+            
+            if (!value) return false
+
+            const enemyPieceMove = verifyMoves({
+                piece: {
+                    id,
+                    name: value.name,
+                    team: value.team
+                },
+                tier: value.tier,
+                columnNumber: value.columnIndex + 1,
+                rowNumber: value.rowIndex + 1
+            })
+
+            return enemyPieceMove?.some(move => {
+                const coordinate = move.id.replace('tile', '')
+                const [rowNumber, columnNumber] = coordinate.split('-')
+
+                return  king.columnIndex+1 == columnNumber 
+                        && king.rowIndex+1 == rowNumber
+            })
+        })
     }
 
     const clickPieceInBench = (piece: PieceProps) => {
@@ -349,19 +387,24 @@ export const BoardProvider: React.FC = ({children}) => {
         const towerHeight = tile.pieces.length
         const lastPiece = tile.pieces[towerHeight-1]
 
+        let tierAfterMove = 1
+
         //there are pieces in the tile
         if(towerHeight > 0){
             const topPieceIsFromSameTeam = lastPiece.team === playingNow
 
             if(topPieceIsFromSameTeam){
                 if(towerHeight === 3) return
-                                                 
+                
+                tierAfterMove = towerHeight + 1
                 tile.pieces = [...tile.pieces, selectedPiece]
             }
 
             else{
                 // The piece is an enemy, so don't do anything
                 if(selectedPieceIsFromBench) return
+
+                tierAfterMove = towerHeight
 
                 //capture enemy piece
                 tile.pieces.pop()
@@ -372,7 +415,6 @@ export const BoardProvider: React.FC = ({children}) => {
         //the tile is empty
         else{      
             tile.pieces = [selectedPiece]
-            console.log([selectedPiece])
         }
 
         boardCopy[rowIndex].tiles[columnIndex] = tile
@@ -386,6 +428,13 @@ export const BoardProvider: React.FC = ({children}) => {
             : null 
             
         setBoard(boardAfterRemovingPieceFromPreviousTile || boardCopy)
+        setPiecesInTheBoard({...piecesInTheBoard, [selectedPiece.id] : {
+            columnIndex,
+            rowIndex,
+            tier: tierAfterMove,
+            name: selectedPiece.name,
+            team: selectedPiece.team
+        }})
         setValidMoveIdentifier(state => !state)
     }
 
@@ -412,15 +461,21 @@ export const BoardProvider: React.FC = ({children}) => {
         }
 
         if(tilePieces[0] && !isStarting && !selectedPiece && piece.team === playingNow){
-            verifyMoves({
+            const selectedPieceMoves = verifyMoves({
                 piece,
                 tier: tilePieces.length,
                 columnNumber: Number(columnNumber),
                 rowNumber: Number(rowNumber)
             })
+
+            setSelectedPieceTileMoves(selectedPieceMoves)
             setSelectedPiece(piece)
             setSelectedPiecePosition({columnIndex, rowIndex})
         }
+    }
+
+    if(roundNumber > 3){
+        console.log(verifyIfKingIsChecked(playingNow))
     }
 
     const value={
@@ -429,7 +484,6 @@ export const BoardProvider: React.FC = ({children}) => {
         selectedPiece,
         setSelectedPiece,
         playingNow,
-        verifyMoves,
         verifyIfSelectedPieceCanMoveToThisTile,
         handleClickTile,
         clickPieceInBench

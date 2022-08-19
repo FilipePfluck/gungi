@@ -17,7 +17,6 @@ interface moveProps{
     [piece: string]: {
         [tier: number]: {
             moves: Directions,
-            attack?: Directions
         }
     }
 }
@@ -106,7 +105,7 @@ const moves: moveProps = {
         },
         3: {
             moves: {
-                up: 2, 
+                up: 1, 
                 upRight: 1,
                 upLeft: 1,
                 left: 1,
@@ -133,7 +132,7 @@ const moves: moveProps = {
         },
         2: {
             moves: {
-                up: 2, 
+                up: 1, 
                 upRight: 1,
                 upLeft: 1,
                 left: 1,
@@ -147,13 +146,13 @@ const moves: moveProps = {
         3: {
             moves: {
                 up: 2, 
-                upRight: 2,
-                upLeft: 2,
+                upRight: 1,
+                upLeft: 1,
                 left: 2,
                 right: 2,
                 down: 2,
-                downRight: 2,
-                downLeft: 2,
+                downRight: 1,
+                downLeft: 1,
                 type: 'continuous'
             }
         }
@@ -166,50 +165,58 @@ const moves: moveProps = {
                 left: 1,
                 right: 1,
                 down: 1,
+                upLeft: 1,
+                downLeft: 1,
+                upRight: 1,
+                downRight: 1,
                 type: 'continuous'
             },
-            attack: {
-                type: 'jump',
-                tiles: [
-                    {x:0, y:2}
-                ]
-            }
         },
         2: {
             moves: {
-                up: 1,
-                left: 1,
-                right: 1,
-                down: 1,
-                type: 'continuous'
-            },
-            attack: {
-                type: 'jump',
                 tiles: [
-                    {x:0, y:2},
-                    {x:0, y:3}
-                ]
-            }
+                    {x:0, y: 1},
+                    {x:0, y: 2},
+                    {x:0, y: -1},
+                    {x:0, y: -2},
+                    {x: 1, y: 0},
+                    {x: 2, y: 0},
+                    {x: -1, y: 0},
+                    {x: -2, y: 0},
+                    {x: 1, y: 1},
+                    {x: -1, y: 1},
+                    {x: 1, y: -1},
+                    {x: -1, y: -1},
+                ],
+                type: 'jump'
+            },
         },
         3: {
             moves: {
-                up: 1,
-                left: 1,
-                right: 1,
-                down: 1,
-                downRight: 1,
-                downLeft: 1,
-                type: 'continuous'
-            },
-            attack: {
-                type: 'jump',
                 tiles: [
-                    {x:0, y:2},
-                    {x:0, y:3},
-                    {x:1, y:2},
-                    {x:-1, y:2},
-                ]
-            }
+                    {x:0, y: 1},
+                    {x:0, y: 2},
+                    {x:0, y: -1},
+                    {x:0, y: -2},
+                    {x: 1, y: 0},
+                    {x: 2, y: 0},
+                    {x: -1, y: 0},
+                    {x: -2, y: 0},
+                    {x: 1, y: 1},
+                    {x: -1, y: 1},
+                    {x: 1, y: -1},
+                    {x: -1, y: -1},
+                    {x: 2, y: 1},
+                    {x: 1, y: 2},
+                    {x: 2, y: -1},
+                    {x: 1, y: -2},
+                    {x: -2, y: 1},
+                    {x: -1, y: 2},
+                    {x: -2, y: -1},
+                    {x: -1, y: -2},
+                ],
+                type: 'jump'
+            },
         }
     },
 
@@ -264,48 +271,36 @@ const moves: moveProps = {
         1: {
             moves: {
                 type: 'continuous',
-                up: 1,
-                left: 1,
-                right: 1,
-                down: 1
-            },
-            attack: {
-                type: 'continuous',
-                up: 1
+                up: 2,
+                left: 2,
+                right: 2,
+                down: 2
             }
         },
         2: {
             moves: {
                 type: 'continuous',
-                up: 1,
-                left: 1,
-                right: 1,
-                down: 1,
-                downRight: 1,
-                downLeft: 1
-            },
-            attack: {
-                type: 'continuous',
-                up: 2
+                up: 2,
+                left: 2,
+                right: 2,
+                down: 2,
+                upLeft: 1,
+                upRight: 1,
+                downLeft: 1,
+                downRight: 1
             }
         },
         3: {
             moves: {
                 type: 'continuous',
-                up: 1,
-                left: 1,
-                right: 1,
-                down: 1,
-                downRight: 1,
+                up: 3,
+                left: 3,
+                right: 3,
+                down: 3,
+                upLeft: 1,
+                upRight: 1,
                 downLeft: 1,
-                upRight: 1,
-                upLeft: 1
-            },
-            attack: {
-                type: 'continuous',
-                up: 2,
-                upRight: 1,
-                upLeft: 1
+                downRight: 1
             }
         }
     },
@@ -317,47 +312,37 @@ const moves: moveProps = {
                 left: 1,
                 right: 1,
                 down: 1,
+                upLeft: 1,
+                upRight: 1,
+                downLeft: 1,
+                downRight: 1,
                 type: 'continuous'
             }
         },
         2: {
             moves: {
-                type: 'jump',
-                tiles: [
-                    {x: 1, y:0},
-                    {x: -1, y:0},
-                    {x: 0, y:1},
-                    {x: 0, y:-1},
-
-                    {x: 2, y:2},
-                    {x: -2, y:2},
-                    {x: 2, y:-2},
-                    {x: -2, y:-2},
-                ]
+                up: 2,
+                left: 2,
+                right: 2,
+                down: 2,
+                upLeft: 2,
+                upRight: 2,
+                downLeft: 2,
+                downRight: 2,
+                type: 'continuous'
             }
         },
         3: {
             moves: {
-                type: 'jump',
-                tiles: [
-                    {x: 1, y:0},
-                    {x: -1, y:0},
-                    {x: 0, y:1},
-                    {x: 0, y:-1},
-                    {x: 1, y:1},
-                    {x: -1, y:1},
-                    {x: 1, y:-1},
-                    {x: -1, y:-1},
-
-                    {x: 3, y:0},
-                    {x: -3, y:0},
-                    {x: 0, y:3},
-                    {x: 0, y:-3},
-                    {x: 3, y:3},
-                    {x: -3, y:3},
-                    {x: 3, y:-3},
-                    {x: -3, y:-3},
-                ]
+                up: 3,
+                left: 3,
+                right: 3,
+                down: 3,
+                upLeft: 3,
+                upRight: 3,
+                downLeft: 3,
+                downRight: 3,
+                type: 'continuous'
             }
         }
     },
@@ -366,28 +351,28 @@ const moves: moveProps = {
         1: {
             moves: {
                 type: 'continuous',
-                upRight: 1,
-                upLeft: 1,
-                downRight: 1,
-                downLeft: 1
-            }
-        },
-        2: {
-            moves: {
-                type: 'continuous',
                 upRight: 2,
                 upLeft: 2,
                 downRight: 2,
                 downLeft: 2
             }
         },
+        2: {
+            moves: {
+                type: 'continuous',
+                upRight: 4,
+                upLeft: 4,
+                downRight: 4,
+                downLeft: 4
+            }
+        },
         3:{
             moves: {
                 type: 'continuous',
-                upRight: 9,
-                upLeft: 9,
-                downRight: 9,
-                downLeft: 9
+                upRight: 8,
+                upLeft: 8,
+                downRight: 8,
+                downLeft: 8
             }
         }
     },
@@ -396,28 +381,28 @@ const moves: moveProps = {
         1: {
             moves: {
                 type: 'continuous',
-                up: 1,
-                left: 1,
-                right: 1,
-                down: 1
-            }
-        },
-        2: {
-            moves: {
-                type: 'continuous',
                 up: 2,
                 left: 2,
                 right: 2,
                 down: 2
             }
         },
+        2: {
+            moves: {
+                type: 'continuous',
+                up: 4,
+                left: 4,
+                right: 4,
+                down: 4
+            }
+        },
         3:{
             moves: {
                 type: 'continuous',
-                up: 9,
-                left: 9,
-                right: 9,
-                down: 9
+                up: 8,
+                left: 8,
+                right: 8,
+                down: 8
             }
         }
     },
@@ -426,40 +411,40 @@ const moves: moveProps = {
         1: {
             moves: {
                 type: 'continuous',
-                up: 1,
-                left: 1,
-                right: 1,
-                down: 1
-            },
-            attack: {
-                type: 'continuous',
                 up: 2,
+                left: 2,
+                right: 2,
+                down: 2,
+                upLeft: 1,
+                upRight: 1,
+                downLeft: 1,
+                downRight: 1
             }
         },
         2: {
             moves: {
                 type: 'continuous',
-                up: 1,
-                left: 1,
-                right: 1,
-                down: 1
-            },
-            attack: {
-                type: 'continuous',
                 up: 3,
+                left: 3,
+                right: 3,
+                down: 3,
+                upLeft: 1,
+                upRight: 1,
+                downLeft: 1,
+                downRight: 1
             }
         },
         3: {
             moves: {
                 type: 'continuous',
-                up: 1,
-                left: 1,
-                right: 1,
-                down: 1
-            },
-            attack: {
-                type: 'continuous',
                 up: 4,
+                left: 4,
+                right: 4,
+                down: 4,
+                upLeft: 1,
+                upRight: 1,
+                downLeft: 1,
+                downRight: 1
             }
         }
     },
@@ -503,15 +488,33 @@ const moves: moveProps = {
         },
         3: {
             moves: {
-                type: 'continuous',
-                up: 9,
-                upRight: 9,
-                upLeft: 9,
-                left: 9,
-                right: 9,
-                downLeft: 9,
-                downRight: 9,
-                down: 9
+                type: 'jump',
+                tiles: [
+                    {x:-2, y:0},
+                    {x:2, y:0},
+                    {x:0, y:2},
+                    {x:0, y:-2},
+
+                    {x:-1, y:-1},
+                    {x:1, y:1},
+                    {x:-1, y:1},
+                    {x:1, y:-1},
+
+                    {x:-2, y:-2},
+                    {x:2, y:2},
+                    {x:-2, y:2},
+                    {x:2, y:-2},
+
+                    {x: 3, y: 1},
+                    {x: 3, y: -1},
+                    {x: -3, y: 1},
+                    {x: -3, y: -1},
+
+                    {x: 1, y: 3},
+                    {x: 1, y: -3},
+                    {x: -1, y: 3},
+                    {x: -1, y: -3},
+                ]
             }
         }
     },
