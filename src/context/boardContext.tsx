@@ -32,12 +32,24 @@ interface handleClickTileProps {
   rowId: string
 }
 
+interface verifyIfPieceCanMoveToThisTileProps {
+  tileId: string
+  piece: PieceProps
+  tier: number
+  piecePosition?: {
+    pieceRowIndex: number
+    pieceColumnIndex: number
+  }
+}
+
 interface ContextValue {
   board: RowProps[]
   pieces: PieceProps[]
   selectedPiece: PieceProps | null
   setSelectedPiece: Dispatch<SetStateAction<PieceProps>>
   playingNow: 'white' | 'black'
+  isCheckmate: 'white' | 'black' | null
+  selectedPieceTileId: string
   verifyIfSelectedPieceCanMoveToThisTile: (id: string) => boolean
   handleClickTile: (props: handleClickTileProps) => void
   clickPieceInBench: (piece: PieceProps) => void
@@ -48,15 +60,12 @@ interface verifyMoves {
   tier: number
   rowNumber: number
   columnNumber: number
+  virtualBoard?: RowProps[]
 }
 
 interface Coordinate {
   rowIndex: number
   columnIndex: number
-}
-
-interface RemoveTopPieceProps {
-  serializedBoard?: RowProps[]
 }
 
 interface PieceInTheBoard {
@@ -67,6 +76,28 @@ interface PieceInTheBoard {
     columnIndex: number
     tier: number
   }
+}
+
+interface addPieceToNewTileProps extends Coordinate {
+  virtualBoard?: RowProps[]
+  virtualPiecesInTheBoard?: PieceInTheBoard
+  piece: PieceProps
+  piecePosition?: {
+    pieceRowIndex: number
+    pieceColumnIndex: number
+  }
+}
+
+interface RemoveTopPieceProps {
+  serializedBoard?: RowProps[]
+  rowIndex: number
+  columnIndex: number
+}
+
+interface verifyIfKingIsCheckedProps {
+  team: 'white' | 'black'
+  virtualPiecesInTheBoard?: PieceInTheBoard
+  virtualBoard?: RowProps[]
 }
 
 const BoardContext = createContext({} as ContextValue)
@@ -108,10 +139,13 @@ export const BoardProvider: React.FC = ({ children }) => {
     useState(false)
   const [selectedPieceTileMoves, setSelectedPieceTileMoves] =
     useState<TileProps[]>(null)
+  const [selectedPieceTileId, setSelectedPieceTileId] = useState('')
 
   const [playingNow, setPlayingNow] = useState<'white' | 'black'>(null)
   const [roundNumber, setRoundNumber] = useState(1)
   const isStarting = roundNumber < 2
+
+  const [isCheckmate, setIsCheckmate] = useState<'white' | 'black' | null>(null)
 
   // This state is used to watch when a valid move ocurs
   // To change in a useEffect which team is playing and unselect the selected piece
@@ -134,30 +168,28 @@ export const BoardProvider: React.FC = ({ children }) => {
     setSelectedPiece(null)
     setSelectedPieceTileMoves([])
     setSelectedPieceIsFromBench(false)
+    setSelectedPieceTileId('')
   }, [validMoveIdentifier])
 
   useEffect(() => {
     console.log(piecesInTheBoard)
   }, [piecesInTheBoard])
 
-  const verifyIfSelectedPieceCanMoveToThisTile = (id: string) => {
-    if (selectedPieceTileMoves) {
-      const index = selectedPieceTileMoves.findIndex((tile) => {
-        return tile.id === id
-      })
-
-      return index >= 0
-    }
-
-    return false
-  }
-
   const verifyMoves = ({
     piece,
     tier,
     columnNumber,
     rowNumber,
+    virtualBoard,
   }: verifyMoves) => {
+    const _board = virtualBoard || board
+
+    const tile = _board[rowNumber - 1].tiles[columnNumber - 1]
+    const tileHeight = tile.pieces.length
+
+    // pieces that are below other pieces cannot move
+    if (tileHeight !== tier) return
+
     const pieceMove = moves[piece.name][tier]?.moves
 
     const tilesArray = []
@@ -197,7 +229,7 @@ export const BoardProvider: React.FC = ({ children }) => {
         /* let surpassedBoard = false
 
                 Object.keys(directions).forEach(key=>{
-                    const _direction = playingNow === 'white' 
+                    const _direction = piece.team === 'white' 
                         ? directions[key] 
                         : directions[directions[key].inverse]
 
@@ -215,39 +247,39 @@ export const BoardProvider: React.FC = ({ children }) => {
                 if(surpassedBoard) break */
 
         if (
-          (direction.toLowerCase().includes('up') && playingNow === 'white') ||
-          (direction.toLowerCase().includes('down') && playingNow === 'black')
+          (direction.toLowerCase().includes('up') && piece.team === 'white') ||
+          (direction.toLowerCase().includes('down') && piece.team === 'black')
         ) {
           if (rowNumber + i > 9) break
         }
 
         if (
           (direction.toLowerCase().includes('down') &&
-            playingNow === 'white') ||
-          (direction.toLowerCase().includes('up') && playingNow === 'black')
+            piece.team === 'white') ||
+          (direction.toLowerCase().includes('up') && piece.team === 'black')
         ) {
           if (rowNumber - i < 1) break
         }
 
         if (
           (direction.toLowerCase().includes('right') &&
-            playingNow === 'white') ||
-          (direction.toLowerCase().includes('left') && playingNow === 'black')
+            piece.team === 'white') ||
+          (direction.toLowerCase().includes('left') && piece.team === 'black')
         ) {
           if (columnNumber + i > 9) break
         }
 
         if (
           (direction.toLowerCase().includes('left') &&
-            playingNow === 'white') ||
-          (direction.toLowerCase().includes('right') && playingNow === 'black')
+            piece.team === 'white') ||
+          (direction.toLowerCase().includes('right') && piece.team === 'black')
         ) {
           if (columnNumber - i < 1) break
         }
 
         // I baseado no time,
         // considerando que as prestas se movem no sentido contrário das brancas
-        const teamI = playingNow === 'white' ? i : -i
+        const teamI = piece.team === 'white' ? i : -i
 
         // Índice do Board
         const rowIndex = direction.toLowerCase().includes('up')
@@ -263,11 +295,12 @@ export const BoardProvider: React.FC = ({ children }) => {
           ? columnNumber - 1 - teamI
           : columnNumber - 1
 
-        const tile = board[rowIndex].tiles[tileIndex]
+        const tile = _board[rowIndex].tiles[tileIndex]
 
         const tilePieces = tile.pieces
 
-        if (tilePieces[2] && tilePieces[2].team === playingNow) break
+        if (tilePieces[tileHeight - 1]?.name === 'king') break
+        if (tilePieces[2] && tilePieces[2].team === piece.team) break
 
         shouldBreak = !!tilePieces[0]
 
@@ -281,16 +314,19 @@ export const BoardProvider: React.FC = ({ children }) => {
         const t = columnNumber - 1 + tile.x
 
         if (r >= 0 && r <= 8 && t >= 0 && t <= 8) {
-          const tileToGo = board[r].tiles[t]
+          const tileToGo = _board[r].tiles[t]
 
-          if (!(tileToGo.pieces[2] && tileToGo.pieces[2].team === playingNow)) {
-            tilesArray.push(board[r].tiles[t])
+          if (
+            !(tileToGo.pieces[2] && tileToGo.pieces[2].team === piece.team) &&
+            !(tileToGo.pieces[tileToGo.pieces.length - 1]?.name === 'king')
+          ) {
+            tilesArray.push(_board[r].tiles[t])
           }
         }
       })
     }
 
-    // if(piece.team !== playingNow) return
+    // if(piece.team !== piece.team) return
 
     if (pieceMove.type === 'continuous') {
       const keys = Object.keys(pieceMove).filter(
@@ -316,14 +352,64 @@ export const BoardProvider: React.FC = ({ children }) => {
     return tilesArray
   }
 
-  const verifyIfKingIsChecked = (team: 'black' | 'white') => {
-    const enemyPieces = Object.entries(piecesInTheBoard).filter(
+  // TODO
+  // Refactor to allow verifying if a piece
+  // that is not selected can move to this file
+
+  const verifyIfPieceCanMoveToThisTile = ({
+    piece,
+    piecePosition,
+    tileId,
+    tier,
+  }: verifyIfPieceCanMoveToThisTileProps) => {
+    const { pieceColumnIndex, pieceRowIndex } = piecePosition
+
+    const pieceMoves = verifyMoves({
+      piece,
+      tier,
+      columnNumber: pieceColumnIndex + 1,
+      rowNumber: pieceRowIndex + 1,
+    })
+
+    if (pieceMoves) {
+      const index = pieceMoves.findIndex((tile) => {
+        return tile.id === tileId
+      })
+
+      return index >= 0
+    }
+
+    return false
+  }
+
+  const verifyIfSelectedPieceCanMoveToThisTile = (id: string) => {
+    if (selectedPieceTileMoves) {
+      const index = selectedPieceTileMoves.findIndex((tile) => {
+        return tile.id === id
+      })
+
+      return index >= 0
+    }
+
+    return false
+  }
+
+  const verifyIfKingIsChecked = ({
+    team,
+    virtualPiecesInTheBoard,
+    virtualBoard,
+  }: verifyIfKingIsCheckedProps) => {
+    const _piecesInTheBoard = virtualPiecesInTheBoard || piecesInTheBoard
+
+    // console.log({ virtualBoard, virtualPiecesInTheBoard })
+
+    const enemyPieces = Object.entries(_piecesInTheBoard).filter(
       ([key, value]) => {
         return value.team === (team === 'white' ? 'black' : 'white')
       },
     )
 
-    const king = piecesInTheBoard[`${team}-king-1`]
+    const king = _piecesInTheBoard[`${team}-king-1`]
 
     return enemyPieces?.some(([id, value]) => {
       if (!value) return false
@@ -337,6 +423,7 @@ export const BoardProvider: React.FC = ({ children }) => {
         tier: value.tier,
         columnNumber: value.columnIndex + 1,
         rowNumber: value.rowIndex + 1,
+        virtualBoard,
       })
 
       return enemyPieceMove?.some((move) => {
@@ -344,16 +431,12 @@ export const BoardProvider: React.FC = ({ children }) => {
         const [rowNumber, columnNumber] = coordinate.split('-')
 
         return (
-          king.columnIndex + 1 === columnNumber &&
-          king.rowIndex + 1 === rowNumber
+          king.columnIndex + 1 === Number(columnNumber) &&
+          king.rowIndex + 1 === Number(rowNumber)
         )
       })
     })
   }
-
-  const isPlayingNowChecked = verifyIfKingIsChecked(playingNow)
-
-  const verifyLegalMoves = () => {}
 
   const clickPieceInBench = (piece: PieceProps) => {
     if (playingNow === piece.team) {
@@ -372,18 +455,24 @@ export const BoardProvider: React.FC = ({ children }) => {
     })
   }
 
-  const removeSelectedPieceFromPreviousTile = ({
+  const removeTopPieceFromTile = ({
     serializedBoard,
+    columnIndex,
+    rowIndex,
   }: RemoveTopPieceProps) => {
-    const rowIndex = selectedPiecePosition.rowIndex
-    const columnIndex = selectedPiecePosition.columnIndex
-
     const boardCopy = serializedBoard ? [...serializedBoard] : [...board]
     boardCopy[rowIndex].tiles[columnIndex].pieces.pop()
     return boardCopy
   }
 
-  const addPieceToNewTile = ({ rowIndex, columnIndex }: Coordinate) => {
+  const addPieceToNewTile = ({
+    rowIndex,
+    columnIndex,
+    virtualBoard,
+    virtualPiecesInTheBoard,
+    piece,
+    piecePosition,
+  }: addPieceToNewTileProps) => {
     // The first piece to be placed must be the king
     if (roundNumber === 1 && selectedPiece.name !== 'king') return
 
@@ -396,12 +485,25 @@ export const BoardProvider: React.FC = ({ children }) => {
     )
       return
 
-    const boardCopy = [...board]
+    const boardCopy = virtualBoard ? [...virtualBoard] : [...board]
     const tile = boardCopy[rowIndex].tiles[columnIndex]
 
-    const isAValidMove = verifyIfSelectedPieceCanMoveToThisTile(tile.id)
+    const _piecesInTheBoard = virtualPiecesInTheBoard || piecesInTheBoard
 
-    if (!selectedPieceIsFromBench && !isAValidMove) return
+    if (!selectedPieceIsFromBench) {
+      const pieceTier = _piecesInTheBoard[piece.id].tier
+
+      const isAValidMove = virtualBoard
+        ? verifyIfPieceCanMoveToThisTile({
+            tileId: tile.id,
+            piece,
+            tier: pieceTier,
+            piecePosition,
+          })
+        : verifyIfSelectedPieceCanMoveToThisTile(tile.id)
+
+      if (!isAValidMove) return
+    }
 
     const towerHeight = tile.pieces.length
     const lastPiece = tile.pieces[towerHeight - 1]
@@ -412,11 +514,14 @@ export const BoardProvider: React.FC = ({ children }) => {
     if (towerHeight > 0) {
       const topPieceIsFromSameTeam = lastPiece.team === playingNow
 
+      // can't play a piece on top of the king
+      if (lastPiece.name === 'king') return
+
       if (topPieceIsFromSameTeam) {
         if (towerHeight === 3) return
 
         tierAfterMove = towerHeight + 1
-        tile.pieces = [...tile.pieces, selectedPiece]
+        tile.pieces = [...tile.pieces, piece]
       } else {
         // The piece is an enemy, so don't do anything
         if (selectedPieceIsFromBench) return
@@ -425,13 +530,14 @@ export const BoardProvider: React.FC = ({ children }) => {
 
         // capture enemy piece
         tile.pieces.pop()
-        tile.pieces = [...tile.pieces, selectedPiece]
+        tile.pieces = [...tile.pieces, piece]
+        delete _piecesInTheBoard[lastPiece.id]
       }
     }
 
     // the tile is empty
     else {
-      tile.pieces = [selectedPiece]
+      tile.pieces = [piece]
     }
 
     boardCopy[rowIndex].tiles[columnIndex] = tile
@@ -441,21 +547,116 @@ export const BoardProvider: React.FC = ({ children }) => {
     }
 
     const boardAfterRemovingPieceFromPreviousTile = !selectedPieceIsFromBench
-      ? removeSelectedPieceFromPreviousTile({ serializedBoard: boardCopy })
+      ? removeTopPieceFromTile({
+          serializedBoard: boardCopy,
+          columnIndex: piecePosition.pieceColumnIndex,
+          rowIndex: piecePosition.pieceRowIndex,
+        })
       : null
 
-    setBoard(boardAfterRemovingPieceFromPreviousTile || boardCopy)
-    setPiecesInTheBoard({
-      ...piecesInTheBoard,
-      [selectedPiece.id]: {
+    // The virtual board is a fictional board
+    // used to check if the king is in check after certain move,
+    // so if there is a virtual board I don't want to change the actual board.
+
+    if (!virtualBoard) {
+      setBoard(boardAfterRemovingPieceFromPreviousTile || boardCopy)
+      setPiecesInTheBoard((state) => {
+        return {
+          ...state,
+          [piece.id]: {
+            columnIndex,
+            rowIndex,
+            tier: tierAfterMove,
+            name: piece.name,
+            team: piece.team,
+          },
+        }
+      })
+      setValidMoveIdentifier((state) => !state)
+    } else {
+      virtualBoard = boardAfterRemovingPieceFromPreviousTile || boardCopy
+      virtualPiecesInTheBoard[piece.id] = {
         columnIndex,
         rowIndex,
         tier: tierAfterMove,
-        name: selectedPiece.name,
-        team: selectedPiece.team,
-      },
+        name: piece.name,
+        team: piece.team,
+      }
+    }
+  }
+
+  const verifyLegalMoves = ({ piece, tier, columnNumber, rowNumber }) => {
+    const selectedPieceMoves: TileProps[] = verifyMoves({
+      piece,
+      tier,
+      columnNumber,
+      rowNumber,
     })
-    setValidMoveIdentifier((state) => !state)
+
+    const legalMoves = selectedPieceMoves.filter((move) => {
+      // this makes a deep copy
+      // to prevent compromising the reference of the arrays and objects
+      // inside the board
+      const virtualBoard = JSON.parse(JSON.stringify(board))
+      const virtualPiecesInTheBoard = JSON.parse(
+        JSON.stringify(piecesInTheBoard),
+      )
+      const coordinate = move.id.replace('tile', '')
+      const [tileRowNumber, tileColumnNumber] = coordinate.split('-')
+
+      const columnIndex = Number(tileColumnNumber) - 1
+      const rowIndex = Number(tileRowNumber) - 1
+
+      console.log('before', virtualPiecesInTheBoard)
+
+      addPieceToNewTile({
+        columnIndex,
+        rowIndex,
+        piece,
+        virtualBoard,
+        virtualPiecesInTheBoard,
+        piecePosition: {
+          pieceColumnIndex: columnNumber - 1,
+          pieceRowIndex: rowNumber - 1,
+        },
+      })
+
+      console.log('after', virtualPiecesInTheBoard)
+
+      const isKingChecked = verifyIfKingIsChecked({
+        team: playingNow,
+        virtualBoard,
+        virtualPiecesInTheBoard,
+      })
+
+      console.log(isKingChecked)
+
+      return !isKingChecked
+    })
+
+    return legalMoves
+  }
+
+  // eslint-disable-next-line
+  const verifyIfIsCheckmate = () => {
+    const isChecked = verifyIfKingIsChecked({ team: playingNow })
+
+    if (!isChecked) return
+
+    const king = piecesInTheBoard[`${playingNow}-king-1`]
+
+    const kingMoves = verifyLegalMoves({
+      piece: {
+        id: `${playingNow}-king-1`,
+        name: king.name,
+        team: king.team,
+      },
+      tier: king.tier,
+      columnNumber: king.columnIndex + 1,
+      rowNumber: king.rowIndex + 1,
+    })
+
+    return kingMoves.length === 0
   }
 
   const handleClickTile = ({
@@ -471,9 +672,25 @@ export const BoardProvider: React.FC = ({ children }) => {
     const piece = tilePieces[tilePieces.length - 1]
 
     if (selectedPiece) {
+      if (selectedPiece?.id === piece?.id) {
+        setSelectedPiece(null)
+        setSelectedPiecePosition(null)
+        setSelectedPieceTileMoves(null)
+        setSelectedPieceTileId('')
+      }
+
+      const piecePosition = selectedPieceIsFromBench
+        ? undefined
+        : {
+            pieceColumnIndex: selectedPiecePosition.columnIndex,
+            pieceRowIndex: selectedPiecePosition.rowIndex,
+          }
+
       addPieceToNewTile({
         columnIndex,
         rowIndex,
+        piece: selectedPiece,
+        piecePosition,
       })
     }
 
@@ -483,22 +700,29 @@ export const BoardProvider: React.FC = ({ children }) => {
       !selectedPiece &&
       piece.team === playingNow
     ) {
-      const selectedPieceMoves = verifyMoves({
+      const selectedPieceMoves = verifyLegalMoves({
         piece,
         tier: tilePieces.length,
         columnNumber: Number(columnNumber),
         rowNumber: Number(rowNumber),
       })
 
+      if (selectedPieceMoves.length === 0) return
+
       setSelectedPieceTileMoves(selectedPieceMoves)
       setSelectedPiece(piece)
       setSelectedPiecePosition({ columnIndex, rowIndex })
+      setSelectedPieceTileId(tileId)
     }
   }
 
-  if (roundNumber > 3) {
-    console.log(verifyIfKingIsChecked(playingNow))
-  }
+  useEffect(() => {
+    if (!isStarting) {
+      if (verifyIfIsCheckmate()) {
+        setIsCheckmate(playingNow)
+      }
+    }
+  }, [playingNow, verifyIfIsCheckmate, isStarting])
 
   const value = {
     board,
@@ -506,9 +730,11 @@ export const BoardProvider: React.FC = ({ children }) => {
     selectedPiece,
     setSelectedPiece,
     playingNow,
-    verifyIfSelectedPieceCanMoveToThisTile,
     handleClickTile,
     clickPieceInBench,
+    verifyIfSelectedPieceCanMoveToThisTile,
+    isCheckmate,
+    selectedPieceTileId,
   }
 
   return <BoardContext.Provider value={value}>{children}</BoardContext.Provider>
