@@ -37,11 +37,11 @@ export const Piece = styled.div<PieceProps>`
   transform: translate(-50%, -50%);
 
   :nth-child(2) {
-    z-index: 10;
+    z-index: 2;
     transform: translate(-50%, -65%);
   }
   :nth-child(3) {
-    z-index: 10;
+    z-index: 3;
     transform: translate(-50%, -80%);
   }
 

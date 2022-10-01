@@ -153,7 +153,7 @@ export const BoardProvider: React.FC = ({ children }) => {
 
   const [playingNow, setPlayingNow] = useState<'white' | 'black'>(null)
   const [roundNumber, setRoundNumber] = useState(1)
-  const isStarting = roundNumber < 2
+  const isStarting = roundNumber <= 20
 
   // This state is used to watch when a valid move ocurs
   // To change in a useEffect which team is playing and unselect the selected piece
@@ -688,7 +688,13 @@ export const BoardProvider: React.FC = ({ children }) => {
   const verifyValidTilesToPlaceANewPiece = () => {
     const validTilesIds = []
 
-    board.forEach((row) => {
+    board.forEach((row, index) => {
+      if (
+        (playingNow === 'white' && index >= 6) ||
+        (playingNow === 'black' && index <= 2)
+      )
+        return
+
       row.tiles.forEach((tile) => {
         const length = tile.pieces.length
 
