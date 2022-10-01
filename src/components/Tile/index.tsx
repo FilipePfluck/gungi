@@ -5,7 +5,7 @@ import * as S from './styles'
 interface PieceProps {
   id: string
   name: string
-  team: string
+  team: 'white' | 'black'
 }
 
 interface TileProps {
