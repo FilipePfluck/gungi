@@ -7,6 +7,7 @@ interface PieceProps {
 interface ContainerProps {
   isGreen: boolean
   isDarkBrown: boolean
+  isLightBrown: boolean
 }
 
 export const Container = styled.div<ContainerProps>`
@@ -14,14 +15,19 @@ export const Container = styled.div<ContainerProps>`
 
   background-color: #cfab4d;
   ${(props) =>
-    props.isGreen &&
+    props.isLightBrown &&
     css`
-      background-color: #769656;
+      background-color: #af8f3f;
     `};
   ${(props) =>
     props.isDarkBrown &&
     css`
-      background-color: #9e7f2e;
+      background-color: #9c7d2c;
+    `};
+  ${(props) =>
+    props.isGreen &&
+    css`
+      background-color: #769656;
     `};
   border: 1px solid #845f2a;
 

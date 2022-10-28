@@ -9,24 +9,18 @@ import * as S from './styles'
 import { Modal } from '../../components/Modal'
 
 const Board = () => {
-  const {
-    board,
-    playingNow,
-    verifyIfIsCheckmate,
-    verifyIfKingIsChecked,
-    verifyIfIsStalemate,
-  } = UseBoard()
+  const { board, playingNow, isCheckmate, isChecked, isStalemate } = UseBoard()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalTitle, setModalTitle] = useState('')
 
+  const _isChecked = isChecked()
+
   useEffect(() => {
-    const isChecked = verifyIfKingIsChecked({ team: playingNow })
+    if (_isChecked) {
+      const _isCheckmate = isCheckmate({ isChecked: true })
 
-    if (isChecked) {
-      const isCheckmate = verifyIfIsCheckmate({ isChecked })
-
-      if (isCheckmate) {
+      if (_isCheckmate) {
         setIsModalOpen(true)
         setModalTitle(
           `${
@@ -35,16 +29,16 @@ const Board = () => {
         )
       }
     } else {
-      const isStalemate = verifyIfIsStalemate({ isChecked })
+      const _isStalemate = isStalemate({ isChecked: false })
 
-      if (isStalemate) {
+      if (_isStalemate) {
         setIsModalOpen(true)
         setModalTitle('A partida empatou por afogamento')
       }
     }
 
     // eslint-disable-next-line
-  }, [playingNow])
+  }, [playingNow, _isChecked])
 
   return (
     <S.Container>
